@@ -1,5 +1,3 @@
-import { Badge } from "@/components/ui/badge";
-
 interface LanguageBadgesProps {
   languages: string[];
 }
@@ -10,11 +8,15 @@ const LanguageBadges = ({ languages }: LanguageBadgesProps) => {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-3">
       {languages.map((lang, index) => (
-        <Badge key={index} variant="language">
+        <span 
+          key={index} 
+          className="language-badge"
+          style={{ animationDelay: `${index * 0.1}s` }}
+        >
           {lang}
-        </Badge>
+        </span>
       ))}
     </div>
   );
