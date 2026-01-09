@@ -2,17 +2,19 @@ import { useState } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ProfilePage from "@/components/profile/ProfilePage";
 import EmployeeProfile from "@/components/profile/EmployeeProfile";
+import { HotelManager } from "@/components/hotel/HotelManager";
 
 const Index = () => {
-  const [profileType, setProfileType] = useState("user");
+  const [activeView, setActiveView] = useState("hotels");
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Profile Type Selector */}
+      {/* View Selector */}
       <div className="bg-background border-b border-border">
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <Tabs value={profileType} onValueChange={setProfileType}>
-            <TabsList className="grid w-full max-w-md grid-cols-2">
+          <Tabs value={activeView} onValueChange={setActiveView}>
+            <TabsList className="grid w-full max-w-lg grid-cols-3">
+              <TabsTrigger value="hotels">Hotel Management</TabsTrigger>
               <TabsTrigger value="user">User Profile</TabsTrigger>
               <TabsTrigger value="employee">Employee Profile</TabsTrigger>
             </TabsList>
@@ -20,8 +22,10 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Profile Content */}
-      {profileType === "user" ? <ProfilePage /> : <EmployeeProfile />}
+      {/* Content */}
+      {activeView === "hotels" && <HotelManager />}
+      {activeView === "user" && <ProfilePage />}
+      {activeView === "employee" && <EmployeeProfile />}
     </div>
   );
 };
