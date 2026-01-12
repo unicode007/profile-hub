@@ -1,10 +1,13 @@
-import { useState, useEffect } from "react";
-import { Hotel } from "./types";
+import { useState } from "react";
+import { Hotel, RoomType, RoomPlan } from "./types";
 import { HotelOnboarding } from "./HotelOnboarding";
 import { HotelList } from "./HotelList";
 import { HotelView } from "./HotelView";
+import { BookingCheckout, BookingDetails } from "./BookingCheckout";
+import { BookingConfirmation } from "./BookingConfirmation";
+import { toast } from "sonner";
 
-type View = "list" | "add" | "view";
+type View = "list" | "add" | "view" | "checkout" | "confirmation";
 
 // Demo hotel data
 const demoHotel: Hotel = {
@@ -149,6 +152,10 @@ export const HotelManager = () => {
   const [view, setView] = useState<View>("list");
   const [hotels, setHotels] = useState<Hotel[]>([demoHotel]);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
+  const [selectedRoom, setSelectedRoom] = useState<RoomType | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState<RoomPlan | null>(null);
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
+  const [bookingId, setBookingId] = useState<string>("");
 
   const handleHotelCreated = (hotel: Hotel) => {
     setHotels([...hotels, hotel]);
@@ -163,11 +170,42 @@ export const HotelManager = () => {
 
   const handleBack = () => {
     setSelectedHotel(null);
+    setSelectedRoom(null);
+    setSelectedPlan(null);
+    setView("list");
+  };
+
+  const handleBookNow = (room: RoomType, plan: RoomPlan) => {
+    setSelectedRoom(room);
+    setSelectedPlan(plan);
+    setView("checkout");
+  };
+
+  const handleBackToView = () => {
+    setSelectedRoom(null);
+    setSelectedPlan(null);
+    setView("view");
+  };
+
+  const handleConfirmBooking = (details: BookingDetails) => {
+    setBookingDetails(details);
+    const newBookingId = `BK${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+    setBookingId(newBookingId);
+    setView("confirmation");
+    toast.success("Booking confirmed successfully!");
+  };
+
+  const handleBackToHotels = () => {
+    setSelectedHotel(null);
+    setSelectedRoom(null);
+    setSelectedPlan(null);
+    setBookingDetails(null);
+    setBookingId("");
     setView("list");
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-6xl">
+    <div className={view === "checkout" || view === "confirmation" ? "" : "container mx-auto p-6 max-w-6xl"}>
       {view === "list" && (
         <HotelList
           hotels={hotels}
@@ -189,7 +227,30 @@ export const HotelManager = () => {
         </div>
       )}
       {view === "view" && selectedHotel && (
-        <HotelView hotel={selectedHotel} onBack={handleBack} />
+        <HotelView 
+          hotel={selectedHotel} 
+          onBack={handleBack}
+          onBookNow={handleBookNow}
+        />
+      )}
+      {view === "checkout" && selectedHotel && selectedRoom && selectedPlan && (
+        <BookingCheckout
+          hotel={selectedHotel}
+          room={selectedRoom}
+          plan={selectedPlan}
+          onBack={handleBackToView}
+          onConfirm={handleConfirmBooking}
+        />
+      )}
+      {view === "confirmation" && selectedHotel && selectedRoom && selectedPlan && bookingDetails && (
+        <BookingConfirmation
+          hotel={selectedHotel}
+          room={selectedRoom}
+          plan={selectedPlan}
+          booking={bookingDetails}
+          bookingId={bookingId}
+          onBackToHotels={handleBackToHotels}
+        />
       )}
     </div>
   );
