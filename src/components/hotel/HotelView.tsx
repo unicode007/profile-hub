@@ -1,4 +1,4 @@
-import { Hotel } from "./types";
+import { Hotel, RoomType, RoomPlan } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 interface HotelViewProps {
   hotel: Hotel;
   onBack: () => void;
+  onBookNow?: (room: RoomType, plan: RoomPlan) => void;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -35,7 +36,7 @@ const categoryLabels: Record<string, string> = {
   otherFacilities: "Other Facilities",
 };
 
-export const HotelView = ({ hotel, onBack }: HotelViewProps) => {
+export const HotelView = ({ hotel, onBack, onBookNow }: HotelViewProps) => {
   const hasAmenities = Object.values(hotel.amenities).some((arr) => arr.length > 0);
 
   return (
@@ -165,7 +166,10 @@ export const HotelView = ({ hotel, onBack }: HotelViewProps) => {
                             <div className="text-xs text-muted-foreground">
                               +₹{plan.taxesAndFees} Taxes & Fees per night
                             </div>
-                            <Button className="mt-2 bg-teal-600 hover:bg-teal-700">
+                            <Button 
+                              className="mt-2 bg-teal-600 hover:bg-teal-700"
+                              onClick={() => onBookNow?.(room, plan)}
+                            >
                               BOOK NOW
                             </Button>
                           </div>
