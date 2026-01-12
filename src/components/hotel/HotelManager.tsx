@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Hotel, RoomType, RoomPlan } from "./types";
 import { HotelOnboarding } from "./HotelOnboarding";
-import { HotelList } from "./HotelList";
 import { HotelView } from "./HotelView";
+import { HotelListingPage } from "./HotelListingPage";
 import { BookingCheckout, BookingDetails } from "./BookingCheckout";
 import { BookingConfirmation } from "./BookingConfirmation";
 import { toast } from "sonner";
@@ -207,7 +207,7 @@ export const HotelManager = () => {
   return (
     <div className={view === "checkout" || view === "confirmation" ? "" : "container mx-auto p-6 max-w-6xl"}>
       {view === "list" && (
-        <HotelList
+        <HotelListingPage
           hotels={hotels}
           onViewHotel={handleViewHotel}
           onAddNew={() => setView("add")}
