@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, MapPin, Bed, CheckCircle2, ChevronRight } from "lucide-react";
+import { Building2, MapPin, Bed, CheckCircle2, ChevronRight, ImageIcon } from "lucide-react";
 import { AmenitiesSection } from "./AmenitiesSection";
 import { RoomTypeForm } from "./RoomTypeForm";
+import { ImageUpload } from "./ImageUpload";
 import { Hotel, RoomType, HOTEL_CATEGORIES } from "./types";
 import { toast } from "@/hooks/use-toast";
 
@@ -35,6 +36,7 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
   const [hotelName, setHotelName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
+  const [hotelImages, setHotelImages] = useState<string[]>([]);
   const [location, setLocation] = useState({
     address: "",
     city: "",
@@ -81,6 +83,9 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
       location,
       amenities,
       roomTypes,
+      images: hotelImages,
+      rating: 4.5,
+      reviewCount: 0,
       createdAt: new Date(),
     };
 
@@ -93,6 +98,7 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
 
   const tabs = [
     { id: "basic", label: "Basic Info", icon: Building2 },
+    { id: "images", label: "Images", icon: ImageIcon },
     { id: "location", label: "Location", icon: MapPin },
     { id: "amenities", label: "Amenities", icon: CheckCircle2 },
     { id: "rooms", label: "Room Types", icon: Bed },
@@ -115,7 +121,7 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-4 w-full">
+        <TabsList className="grid grid-cols-5 w-full">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
               <tab.icon className="h-4 w-4" />
@@ -164,6 +170,27 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
                   rows={4}
                 />
               </div>
+              <div className="flex justify-end">
+                <Button onClick={nextTab}>
+                  Next <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="images" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hotel Images</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <ImageUpload
+                images={hotelImages}
+                onImagesChange={setHotelImages}
+                maxImages={10}
+                label="Upload hotel photos (exterior, lobby, rooms, amenities)"
+              />
               <div className="flex justify-end">
                 <Button onClick={nextTab}>
                   Next <ChevronRight className="h-4 w-4 ml-1" />

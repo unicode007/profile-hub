@@ -8,6 +8,7 @@ export interface RoomType {
   bathrooms: number;
   amenities: string[];
   plans: RoomPlan[];
+  images?: string[];
 }
 
 export interface RoomPlan {
@@ -46,6 +47,46 @@ export interface Hotel {
     otherFacilities: string[];
   };
   roomTypes: RoomType[];
+  images?: string[];
+  rating?: number;
+  reviewCount?: number;
+  createdAt: Date;
+}
+
+export interface Booking {
+  id: string;
+  hotelId: string;
+  hotelName: string;
+  hotelImage?: string;
+  hotelAddress: string;
+  roomName: string;
+  planName: string;
+  checkIn: Date;
+  checkOut: Date;
+  guests: {
+    adults: number;
+    children: number;
+  };
+  rooms: number;
+  guestInfo: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    country: string;
+  };
+  totalAmount: number;
+  status: 'confirmed' | 'cancelled' | 'completed' | 'pending';
+  paymentMethod: string;
+  createdAt: Date;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  phone?: string;
+  avatar?: string;
   createdAt: Date;
 }
 
