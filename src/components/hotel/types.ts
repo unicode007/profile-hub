@@ -76,7 +76,10 @@ export interface Booking {
     country: string;
   };
   totalAmount: number;
-  status: 'confirmed' | 'cancelled' | 'completed' | 'pending';
+  status: 'confirmed' | 'cancelled' | 'completed' | 'pending' | 'checked-in' | 'checked-out';
+  checkInTime?: Date;
+  checkOutTime?: Date;
+  specialRequests?: string;
   paymentMethod: string;
   createdAt: Date;
 }
