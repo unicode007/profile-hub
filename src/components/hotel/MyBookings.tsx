@@ -1,4 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { Booking } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,15 +17,20 @@ import {
   Download,
   Eye,
   Building2,
+  LogIn,
+  LogOut,
+  FileText,
 } from "lucide-react";
 import { format, isPast, isFuture, differenceInDays } from "date-fns";
 import { toast } from "sonner";
 
 interface MyBookingsProps {
   onViewHotel?: (hotelId: string) => void;
+  onViewBooking?: (booking: Booking) => void;
+  onViewInvoice?: (booking: Booking) => void;
 }
 
-export const MyBookings = ({ onViewHotel }: MyBookingsProps) => {
+export const MyBookings = ({ onViewHotel, onViewBooking, onViewInvoice }: MyBookingsProps) => {
   const { bookings, cancelBooking } = useAuth();
 
   const upcomingBookings = bookings.filter(
@@ -47,6 +53,18 @@ export const MyBookings = ({ onViewHotel }: MyBookingsProps) => {
         return (
           <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">
             <AlertCircle className="h-3 w-3 mr-1" /> Pending
+          </Badge>
+        );
+      case "checked-in":
+        return (
+          <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+            <LogIn className="h-3 w-3 mr-1" /> Checked In
+          </Badge>
+        );
+      case "checked-out":
+        return (
+          <Badge className="bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400">
+            <LogOut className="h-3 w-3 mr-1" /> Checked Out
           </Badge>
         );
       case "completed":
@@ -156,8 +174,11 @@ export const MyBookings = ({ onViewHotel }: MyBookingsProps) => {
                   <p className="text-xl font-bold text-primary">₹{booking.totalAmount.toLocaleString()}</p>
                 </div>
                 <div className="flex flex-col gap-2">
-                  <Button variant="outline" size="sm" className="gap-1">
-                    <Download className="h-3 w-3" /> Voucher
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => onViewBooking?.(booking)}>
+                    <Eye className="h-3 w-3" /> View Details
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => onViewInvoice?.(booking)}>
+                    <FileText className="h-3 w-3" /> Invoice
                   </Button>
                   {canCancel && (
                     <Button

@@ -6,16 +6,30 @@ import { HotelListingPage } from "./HotelListingPage";
 import { BookingCheckout, BookingDetails } from "./BookingCheckout";
 import { BookingConfirmation } from "./BookingConfirmation";
 import { MyBookings } from "./MyBookings";
+import { BookingDetail } from "./BookingDetail";
+import { HotelDashboard } from "./HotelDashboard";
+import { InvoiceView } from "./InvoiceView";
 import { UserHeader } from "./UserHeader";
 import { DEMO_HOTELS } from "./demoData";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Building2 } from "lucide-react";
+import { Building2, LayoutDashboard, Hotel as HotelIcon, Calendar } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type View = "list" | "add" | "view" | "checkout" | "confirmation" | "bookings";
+type View = 
+  | "list" 
+  | "add" 
+  | "view" 
+  | "checkout" 
+  | "confirmation" 
+  | "bookings" 
+  | "booking-detail" 
+  | "dashboard"
+  | "invoice";
 
 export const HotelManager = () => {
-  const { isAuthenticated, addBooking } = useAuth();
+  const { isAuthenticated, addBooking, allBookings, checkIn, checkOut, cancelBooking } = useAuth();
   const [view, setView] = useState<View>("list");
   const [hotels, setHotels] = useState<Hotel[]>(DEMO_HOTELS);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
@@ -23,6 +37,8 @@ export const HotelManager = () => {
   const [selectedPlan, setSelectedPlan] = useState<RoomPlan | null>(null);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails | null>(null);
   const [bookingId, setBookingId] = useState<string>("");
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [mainTab, setMainTab] = useState<"hotels" | "dashboard">("hotels");
 
   const handleHotelCreated = (hotel: Hotel) => {
     setHotels([...hotels, hotel]);
@@ -79,6 +95,7 @@ export const HotelManager = () => {
         status: "confirmed",
         paymentMethod: details.paymentMethod,
         createdAt: new Date(),
+        specialRequests: details.specialRequests,
       };
       addBooking(booking);
     }
@@ -93,7 +110,36 @@ export const HotelManager = () => {
     setSelectedPlan(null);
     setBookingDetails(null);
     setBookingId("");
+    setSelectedBooking(null);
     setView("list");
+  };
+
+  const handleViewBooking = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setView("booking-detail");
+  };
+
+  const handleCheckIn = (bookingId: string) => {
+    checkIn(bookingId);
+    toast.success("Guest checked in successfully!");
+  };
+
+  const handleCheckOut = (bookingId: string) => {
+    checkOut(bookingId);
+    toast.success("Guest checked out successfully!");
+  };
+
+  const handleCancelBooking = (bookingId: string) => {
+    cancelBooking(bookingId);
+    toast.success("Booking cancelled successfully!");
+    if (view === "booking-detail") {
+      setView("bookings");
+    }
+  };
+
+  const handleViewInvoice = (booking: Booking) => {
+    setSelectedBooking(booking);
+    setView("invoice");
   };
 
   return (
@@ -101,15 +147,41 @@ export const HotelManager = () => {
       {/* Header with User Auth */}
       <div className="bg-background border-b sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={handleBackToHotels}>
-            <Building2 className="h-6 w-6 text-primary" />
-            <span className="text-xl font-bold">HotelBook</span>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 cursor-pointer" onClick={handleBackToHotels}>
+              <Building2 className="h-6 w-6 text-primary" />
+              <span className="text-xl font-bold">HotelBook</span>
+            </div>
+            
+            {/* Main Navigation */}
+            {isAuthenticated && (
+              <Tabs value={mainTab} onValueChange={(v) => {
+                setMainTab(v as "hotels" | "dashboard");
+                if (v === "dashboard") {
+                  setView("dashboard");
+                } else {
+                  setView("list");
+                }
+              }} className="ml-4">
+                <TabsList>
+                  <TabsTrigger value="hotels" className="gap-2">
+                    <HotelIcon className="h-4 w-4" /> Hotels
+                  </TabsTrigger>
+                  <TabsTrigger value="dashboard" className="gap-2">
+                    <LayoutDashboard className="h-4 w-4" /> Dashboard
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
           </div>
-          <UserHeader onNavigateToBookings={() => setView("bookings")} />
+          <UserHeader onNavigateToBookings={() => {
+            setMainTab("hotels");
+            setView("bookings");
+          }} />
         </div>
       </div>
 
-      <div className={view === "checkout" || view === "confirmation" ? "" : "container mx-auto p-6 max-w-6xl"}>
+      <div className={view === "checkout" || view === "confirmation" || view === "invoice" ? "" : "container mx-auto p-6 max-w-6xl"}>
         {view === "list" && (
           <HotelListingPage
             hotels={hotels}
@@ -149,7 +221,37 @@ export const HotelManager = () => {
             onBackToHotels={handleBackToHotels}
           />
         )}
-        {view === "bookings" && <MyBookings />}
+        {view === "bookings" && (
+          <MyBookings 
+            onViewBooking={handleViewBooking}
+            onViewInvoice={handleViewInvoice}
+          />
+        )}
+        {view === "booking-detail" && selectedBooking && (
+          <BookingDetail
+            booking={selectedBooking}
+            onBack={() => setView("bookings")}
+            onCheckIn={handleCheckIn}
+            onCheckOut={handleCheckOut}
+            onCancel={handleCancelBooking}
+          />
+        )}
+        {view === "dashboard" && (
+          <HotelDashboard
+            bookings={allBookings}
+            onCheckIn={handleCheckIn}
+            onCheckOut={handleCheckOut}
+            onViewBooking={handleViewBooking}
+          />
+        )}
+        {view === "invoice" && selectedBooking && (
+          <div className="container mx-auto p-6 max-w-4xl">
+            <InvoiceView 
+              booking={selectedBooking} 
+              onClose={() => setView("bookings")} 
+            />
+          </div>
+        )}
       </div>
     </div>
   );
