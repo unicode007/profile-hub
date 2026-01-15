@@ -1,8 +1,9 @@
-import { Hotel, RoomType, RoomPlan } from "./types";
+import { Hotel, RoomType, RoomPlan, Booking } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ReviewsRatings, Review } from "./ReviewsRatings";
 import {
   MapPin,
   Bed,
@@ -14,12 +15,17 @@ import {
   Building2,
   Star,
   Utensils,
+  MessageSquare,
 } from "lucide-react";
 
 interface HotelViewProps {
   hotel: Hotel;
   onBack: () => void;
   onBookNow?: (room: RoomType, plan: RoomPlan) => void;
+  reviews?: Review[];
+  onAddReview?: (review: Omit<Review, "id" | "createdAt" | "helpful">) => void;
+  userBookings?: Booking[];
+  currentUserId?: string;
 }
 
 const categoryLabels: Record<string, string> = {
@@ -36,8 +42,17 @@ const categoryLabels: Record<string, string> = {
   otherFacilities: "Other Facilities",
 };
 
-export const HotelView = ({ hotel, onBack, onBookNow }: HotelViewProps) => {
+export const HotelView = ({ 
+  hotel, 
+  onBack, 
+  onBookNow,
+  reviews = [],
+  onAddReview,
+  userBookings = [],
+  currentUserId,
+}: HotelViewProps) => {
   const hasAmenities = Object.values(hotel.amenities).some((arr) => arr.length > 0);
+  const hotelReviews = reviews.filter(r => r.hotelId === hotel.id);
 
   return (
     <div className="space-y-6">
@@ -82,12 +97,15 @@ export const HotelView = ({ hotel, onBack, onBookNow }: HotelViewProps) => {
       </Card>
 
       <Tabs defaultValue="rooms" className="w-full">
-        <TabsList className="grid grid-cols-2 w-full max-w-md">
+        <TabsList className="grid grid-cols-3 w-full max-w-lg">
           <TabsTrigger value="rooms" className="flex items-center gap-2">
-            <Bed className="h-4 w-4" /> Room Types
+            <Bed className="h-4 w-4" /> Rooms
           </TabsTrigger>
           <TabsTrigger value="amenities" className="flex items-center gap-2">
             <Star className="h-4 w-4" /> Amenities
+          </TabsTrigger>
+          <TabsTrigger value="reviews" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" /> Reviews ({hotelReviews.length})
           </TabsTrigger>
         </TabsList>
 
@@ -218,6 +236,24 @@ export const HotelView = ({ hotel, onBack, onBookNow }: HotelViewProps) => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="reviews" className="mt-6">
+          {onAddReview ? (
+            <ReviewsRatings
+              hotel={hotel}
+              reviews={reviews}
+              onAddReview={onAddReview}
+              userBookings={userBookings}
+              currentUserId={currentUserId}
+            />
+          ) : (
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                Reviews not available
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>
