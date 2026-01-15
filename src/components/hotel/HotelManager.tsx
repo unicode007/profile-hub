@@ -31,7 +31,7 @@ type View =
   | "availability";
 
 export const HotelManager = () => {
-  const { isAuthenticated, addBooking, allBookings, checkIn, checkOut, cancelBooking, moveBooking } = useAuth();
+  const { isAuthenticated, user, bookings: userBookings, addBooking, allBookings, checkIn, checkOut, cancelBooking, moveBooking, reviews, addReview } = useAuth();
   const [view, setView] = useState<View>("list");
   const [hotels, setHotels] = useState<Hotel[]>(DEMO_HOTELS);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
@@ -218,7 +218,15 @@ export const HotelManager = () => {
           </div>
         )}
         {view === "view" && selectedHotel && (
-          <HotelView hotel={selectedHotel} onBack={handleBack} onBookNow={handleBookNow} />
+          <HotelView 
+            hotel={selectedHotel} 
+            onBack={handleBack} 
+            onBookNow={handleBookNow}
+            reviews={reviews}
+            onAddReview={addReview}
+            userBookings={userBookings}
+            currentUserId={user?.id}
+          />
         )}
         {view === "checkout" && selectedHotel && selectedRoom && selectedPlan && (
           <BookingCheckout
