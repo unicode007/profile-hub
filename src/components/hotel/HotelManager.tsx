@@ -10,10 +10,11 @@ import { BookingDetail } from "./BookingDetail";
 import { HotelDashboard } from "./HotelDashboard";
 import { InvoiceView } from "./InvoiceView";
 import { UserHeader } from "./UserHeader";
+import { AvailabilityView } from "./AvailabilityView";
 import { DEMO_HOTELS } from "./demoData";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { Building2, LayoutDashboard, Hotel as HotelIcon, Calendar } from "lucide-react";
+import { Building2, LayoutDashboard, Hotel as HotelIcon, CalendarDays } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -26,10 +27,11 @@ type View =
   | "bookings" 
   | "booking-detail" 
   | "dashboard"
-  | "invoice";
+  | "invoice"
+  | "availability";
 
 export const HotelManager = () => {
-  const { isAuthenticated, addBooking, allBookings, checkIn, checkOut, cancelBooking } = useAuth();
+  const { isAuthenticated, addBooking, allBookings, checkIn, checkOut, cancelBooking, moveBooking } = useAuth();
   const [view, setView] = useState<View>("list");
   const [hotels, setHotels] = useState<Hotel[]>(DEMO_HOTELS);
   const [selectedHotel, setSelectedHotel] = useState<Hotel | null>(null);
@@ -142,6 +144,11 @@ export const HotelManager = () => {
     setView("invoice");
   };
 
+  const handleMoveBooking = (bookingId: string, newCheckIn: Date, newCheckOut: Date) => {
+    moveBooking(bookingId, newCheckIn, newCheckOut);
+    toast.success("Booking rescheduled successfully!");
+  };
+
   return (
     <div>
       {/* Header with User Auth */}
@@ -155,23 +162,34 @@ export const HotelManager = () => {
             
             {/* Main Navigation */}
             {isAuthenticated && (
-              <Tabs value={mainTab} onValueChange={(v) => {
-                setMainTab(v as "hotels" | "dashboard");
-                if (v === "dashboard") {
-                  setView("dashboard");
-                } else {
-                  setView("list");
-                }
-              }} className="ml-4">
-                <TabsList>
-                  <TabsTrigger value="hotels" className="gap-2">
-                    <HotelIcon className="h-4 w-4" /> Hotels
-                  </TabsTrigger>
-                  <TabsTrigger value="dashboard" className="gap-2">
-                    <LayoutDashboard className="h-4 w-4" /> Dashboard
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <>
+                <Tabs value={mainTab} onValueChange={(v) => {
+                  setMainTab(v as "hotels" | "dashboard");
+                  if (v === "dashboard") {
+                    setView("dashboard");
+                  } else {
+                    setView("list");
+                  }
+                }} className="ml-4">
+                  <TabsList>
+                    <TabsTrigger value="hotels" className="gap-2">
+                      <HotelIcon className="h-4 w-4" /> Hotels
+                    </TabsTrigger>
+                    <TabsTrigger value="dashboard" className="gap-2">
+                      <LayoutDashboard className="h-4 w-4" /> Dashboard
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="ml-2 gap-2"
+                  onClick={() => setView("availability")}
+                >
+                  <CalendarDays className="h-4 w-4" />
+                  Availability
+                </Button>
+              </>
             )}
           </div>
           <UserHeader onNavigateToBookings={() => {
@@ -251,6 +269,18 @@ export const HotelManager = () => {
               onClose={() => setView("bookings")} 
             />
           </div>
+        )}
+        {view === "availability" && (
+          <AvailabilityView
+            hotels={hotels}
+            bookings={allBookings}
+            onBack={() => {
+              setMainTab("dashboard");
+              setView("dashboard");
+            }}
+            onViewBooking={handleViewBooking}
+            onMoveBooking={handleMoveBooking}
+          />
         )}
       </div>
     </div>

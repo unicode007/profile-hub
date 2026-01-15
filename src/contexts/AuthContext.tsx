@@ -1,12 +1,14 @@
 import { createContext, useContext, useState, ReactNode } from "react";
 import { User, Booking } from "@/components/hotel/types";
 import { addDays, subDays } from "date-fns";
+import { Review, DEMO_REVIEWS } from "@/components/hotel/ReviewsRatings";
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   bookings: Booking[];
   allBookings: Booking[]; // For hotel management dashboard
+  reviews: Review[];
   login: (email: string, password: string) => Promise<boolean>;
   signup: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -15,6 +17,8 @@ interface AuthContextType {
   checkIn: (bookingId: string) => void;
   checkOut: (bookingId: string) => void;
   updateBookingStatus: (bookingId: string, status: Booking["status"]) => void;
+  moveBooking: (bookingId: string, newCheckIn: Date, newCheckOut: Date) => void;
+  addReview: (review: Omit<Review, "id" | "createdAt" | "helpful">) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -201,9 +205,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [allBookings, setAllBookings] = useState<Booking[]>(ALL_DEMO_BOOKINGS);
+  const [reviews, setReviews] = useState<Review[]>(DEMO_REVIEWS);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Demo login - accepts any email/password
     if (email && password) {
       const demoUser: User = {
         id: "user-1",
@@ -276,6 +280,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setAllBookings(updateStatus);
   };
 
+  const moveBooking = (bookingId: string, newCheckIn: Date, newCheckOut: Date) => {
+    const update = (prev: Booking[]) =>
+      prev.map((b) => (b.id === bookingId ? { ...b, checkIn: newCheckIn, checkOut: newCheckOut } : b));
+    setBookings(update);
+    setAllBookings(update);
+  };
+
+  const addReview = (review: Omit<Review, "id" | "createdAt" | "helpful">) => {
+    const newReview: Review = {
+      ...review,
+      id: `rev-${Date.now()}`,
+      createdAt: new Date(),
+      helpful: 0,
+    };
+    setReviews((prev) => [newReview, ...prev]);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -283,6 +304,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isAuthenticated: !!user,
         bookings,
         allBookings,
+        reviews,
         login,
         signup,
         logout,
@@ -291,6 +313,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         checkIn,
         checkOut,
         updateBookingStatus,
+        moveBooking,
+        addReview,
       }}
     >
       {children}
