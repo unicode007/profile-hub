@@ -9,6 +9,11 @@ import { MyBookings } from "./MyBookings";
 import { BookingDetail } from "./BookingDetail";
 import { HotelDashboard } from "./HotelDashboard";
 import { InvoiceView } from "./InvoiceView";
+import { ReceiptView } from "./ReceiptView";
+import { BookingConfirmationPrint } from "./BookingConfirmationPrint";
+import { GuestFolioView } from "./GuestFolioView";
+import { CheckInOutSlip } from "./CheckInOutSlip";
+import { PrintModal } from "./PrintModal";
 import { UserHeader } from "./UserHeader";
 import { AvailabilityView } from "./AvailabilityView";
 import { DEMO_HOTELS } from "./demoData";
@@ -30,6 +35,8 @@ type View =
   | "invoice"
   | "availability";
 
+type PrintDocType = "invoice" | "receipt" | "confirmation" | "folio" | "check-in" | "check-out" | null;
+
 export const HotelManager = () => {
   const { isAuthenticated, user, bookings: userBookings, addBooking, allBookings, checkIn, checkOut, cancelBooking, moveBooking, reviews, addReview } = useAuth();
   const [view, setView] = useState<View>("list");
@@ -41,6 +48,31 @@ export const HotelManager = () => {
   const [bookingId, setBookingId] = useState<string>("");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [mainTab, setMainTab] = useState<"hotels" | "dashboard">("hotels");
+  const [printModal, setPrintModal] = useState<{ open: boolean; type: PrintDocType; booking: Booking | null }>({
+    open: false,
+    type: null,
+    booking: null,
+  });
+
+  const openPrintModal = (type: PrintDocType, booking: Booking) => {
+    setPrintModal({ open: true, type, booking });
+  };
+
+  const closePrintModal = () => {
+    setPrintModal({ open: false, type: null, booking: null });
+  };
+
+  const getPrintModalTitle = (type: PrintDocType) => {
+    switch (type) {
+      case "invoice": return "Invoice";
+      case "receipt": return "Payment Receipt";
+      case "confirmation": return "Booking Confirmation";
+      case "folio": return "Guest Folio";
+      case "check-in": return "Check-in Slip";
+      case "check-out": return "Check-out Slip";
+      default: return "Document";
+    }
+  };
 
   const handleHotelCreated = (hotel: Hotel) => {
     setHotels([...hotels, hotel]);
@@ -251,6 +283,7 @@ export const HotelManager = () => {
           <MyBookings 
             onViewBooking={handleViewBooking}
             onViewInvoice={handleViewInvoice}
+            onPrintDocument={openPrintModal}
           />
         )}
         {view === "booking-detail" && selectedBooking && (
@@ -260,6 +293,7 @@ export const HotelManager = () => {
             onCheckIn={handleCheckIn}
             onCheckOut={handleCheckOut}
             onCancel={handleCancelBooking}
+            onPrintDocument={openPrintModal}
           />
         )}
         {view === "dashboard" && (
@@ -268,6 +302,7 @@ export const HotelManager = () => {
             onCheckIn={handleCheckIn}
             onCheckOut={handleCheckOut}
             onViewBooking={handleViewBooking}
+            onPrintDocument={openPrintModal}
           />
         )}
         {view === "invoice" && selectedBooking && (
@@ -291,6 +326,32 @@ export const HotelManager = () => {
           />
         )}
       </div>
+
+      {/* Print Modal */}
+      <PrintModal
+        open={printModal.open}
+        onClose={closePrintModal}
+        title={getPrintModalTitle(printModal.type)}
+      >
+        {printModal.booking && printModal.type === "invoice" && (
+          <InvoiceView booking={printModal.booking} />
+        )}
+        {printModal.booking && printModal.type === "receipt" && (
+          <ReceiptView booking={printModal.booking} />
+        )}
+        {printModal.booking && printModal.type === "confirmation" && (
+          <BookingConfirmationPrint booking={printModal.booking} />
+        )}
+        {printModal.booking && printModal.type === "folio" && (
+          <GuestFolioView booking={printModal.booking} />
+        )}
+        {printModal.booking && printModal.type === "check-in" && (
+          <CheckInOutSlip booking={printModal.booking} type="check-in" />
+        )}
+        {printModal.booking && printModal.type === "check-out" && (
+          <CheckInOutSlip booking={printModal.booking} type="check-out" />
+        )}
+      </PrintModal>
     </div>
   );
 };
