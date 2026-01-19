@@ -32,11 +32,14 @@ import {
 } from "lucide-react";
 import { format, isToday, isFuture, isPast, differenceInDays } from "date-fns";
 
+type PrintDocType = "invoice" | "receipt" | "confirmation" | "folio" | "check-in" | "check-out";
+
 interface HotelDashboardProps {
   bookings: Booking[];
   onCheckIn: (bookingId: string) => void;
   onCheckOut: (bookingId: string) => void;
   onViewBooking: (booking: Booking) => void;
+  onPrintDocument?: (type: PrintDocType, booking: Booking) => void;
 }
 
 export const HotelDashboard = ({
@@ -44,6 +47,7 @@ export const HotelDashboard = ({
   onCheckIn,
   onCheckOut,
   onViewBooking,
+  onPrintDocument,
 }: HotelDashboardProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("today");

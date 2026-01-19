@@ -4,6 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   ArrowLeft,
   Calendar,
   MapPin,
@@ -24,9 +32,15 @@ import {
   LogIn,
   LogOut,
   Star,
+  Receipt,
+  ClipboardCheck,
+  FileSpreadsheet,
+  ChevronDown,
 } from "lucide-react";
 import { format, differenceInDays, isBefore, isAfter, isToday } from "date-fns";
 import { toast } from "sonner";
+
+type PrintDocType = "invoice" | "receipt" | "confirmation" | "folio" | "check-in" | "check-out";
 
 interface BookingDetailProps {
   booking: Booking;
@@ -34,6 +48,7 @@ interface BookingDetailProps {
   onCheckIn?: (bookingId: string) => void;
   onCheckOut?: (bookingId: string) => void;
   onCancel?: (bookingId: string) => void;
+  onPrintDocument?: (type: PrintDocType, booking: Booking) => void;
 }
 
 export const BookingDetail = ({
@@ -42,6 +57,7 @@ export const BookingDetail = ({
   onCheckIn,
   onCheckOut,
   onCancel,
+  onPrintDocument,
 }: BookingDetailProps) => {
   const nights = differenceInDays(new Date(booking.checkOut), new Date(booking.checkIn));
   const today = new Date();
@@ -127,12 +143,36 @@ export const BookingDetail = ({
           Back to Bookings
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleDownloadInvoice}>
-            <Download className="h-4 w-4 mr-1" /> Invoice
-          </Button>
-          <Button variant="outline" size="sm" onClick={handlePrint}>
-            <Printer className="h-4 w-4 mr-1" /> Print
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1">
+                <Printer className="h-4 w-4" /> Print Documents <ChevronDown className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Print Documents</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onPrintDocument?.("invoice", booking)}>
+                <FileText className="h-4 w-4 mr-2" /> Invoice
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPrintDocument?.("receipt", booking)}>
+                <Receipt className="h-4 w-4 mr-2" /> Payment Receipt
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPrintDocument?.("confirmation", booking)}>
+                <ClipboardCheck className="h-4 w-4 mr-2" /> Booking Confirmation
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPrintDocument?.("folio", booking)}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" /> Guest Folio
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => onPrintDocument?.("check-in", booking)}>
+                <LogIn className="h-4 w-4 mr-2" /> Check-in Slip
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => onPrintDocument?.("check-out", booking)}>
+                <LogOut className="h-4 w-4 mr-2" /> Check-out Slip
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Button variant="outline" size="sm" onClick={handleShare}>
             <Share2 className="h-4 w-4 mr-1" /> Share
           </Button>
