@@ -323,6 +323,11 @@ export const HotelManager = () => {
             }}
             onViewBooking={handleViewBooking}
             onMoveBooking={handleMoveBooking}
+            onCreateBooking={(bookingData) => {
+              if (bookingData && isAuthenticated) {
+                addBooking(bookingData as Booking);
+              }
+            }}
           />
         )}
       </div>
