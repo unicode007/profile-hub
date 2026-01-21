@@ -1,10 +1,11 @@
 import { useState, useRef } from "react";
-import { Hotel, Booking } from "./types";
+import { Hotel, Booking, RoomType } from "./types";
 import { RoomCalendar } from "./RoomCalendar";
 import { DateAvailabilityCalendar } from "./DateAvailabilityCalendar";
 import { BookingCalendar } from "./BookingCalendar";
 import { ShareCalendarModal } from "./ShareCalendarModal";
 import { QuickBookingModal } from "./QuickBookingModal";
+import { RoomTypeManager } from "./RoomTypeManager";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,8 +23,6 @@ import {
   Download,
   Plus,
   RefreshCw,
-  Filter,
-  Settings,
   FileSpreadsheet,
   FileText,
   Printer,
@@ -32,6 +31,7 @@ import {
   LayoutGrid,
   List,
   Maximize2,
+  Bed,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
@@ -322,7 +322,7 @@ export const AvailabilityView = ({
 
       {/* Calendar Type Tabs */}
       <Tabs value={calendarType} onValueChange={(v) => setCalendarType(v as typeof calendarType)}>
-        <TabsList className="grid w-full max-w-lg grid-cols-3">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4">
           <TabsTrigger value="room" className="gap-2">
             <Grid3X3 className="h-4 w-4" />
             Room Grid
@@ -333,7 +333,11 @@ export const AvailabilityView = ({
           </TabsTrigger>
           <TabsTrigger value="booking" className="gap-2">
             <CalendarRange className="h-4 w-4" />
-            Booking Calendar
+            Bookings
+          </TabsTrigger>
+          <TabsTrigger value="rooms" className="gap-2">
+            <Bed className="h-4 w-4" />
+            Room Types
           </TabsTrigger>
         </TabsList>
 
@@ -344,6 +348,11 @@ export const AvailabilityView = ({
               bookings={bookings}
               onViewBooking={onViewBooking}
               onMoveBooking={onMoveBooking}
+              onQuickBook={(date, room) => {
+                setSelectedDateForBooking(date);
+                setIsQuickBookingOpen(true);
+              }}
+              viewDensity={viewDensity}
             />
           )}
         </TabsContent>
@@ -354,6 +363,7 @@ export const AvailabilityView = ({
               hotel={selectedHotel}
               bookings={bookings}
               onSelectDate={(date) => handleQuickBooking(date)}
+              onViewBooking={onViewBooking}
             />
           )}
         </TabsContent>
@@ -365,17 +375,25 @@ export const AvailabilityView = ({
             onViewBooking={onViewBooking}
           />
         </TabsContent>
+
+        <TabsContent value="rooms" className="mt-6">
+          {selectedHotel && (
+            <RoomTypeManager
+              hotel={selectedHotel}
+              bookings={bookings}
+            />
+          )}
+        </TabsContent>
       </Tabs>
 
-      {/* Enhanced Tips Section */}
+      {/* Tips Section */}
       <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
         <p className="font-medium mb-2">💡 Calendar Tips:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li><strong>Room Grid:</strong> View room-by-room availability, drag bookings to reschedule</li>
-          <li><strong>Date View:</strong> See daily availability with color-coded status indicators, click to quick book</li>
-          <li><strong>Booking Calendar:</strong> Track check-ins, check-outs, and guest stays across all hotels</li>
-          <li><strong>Share:</strong> Generate shareable links, sync to external calendars, or email to team members</li>
-          <li><strong>Export:</strong> Download data as CSV/Excel/PDF for reporting</li>
+          <li><strong>Room Grid:</strong> View room-by-room availability, drag bookings to reschedule, hover for details</li>
+          <li><strong>Date View:</strong> See daily availability with color-coded status, click to quick book</li>
+          <li><strong>Bookings:</strong> Track check-ins, check-outs, and guest stays across all hotels</li>
+          <li><strong>Room Types:</strong> Manage room inventory, block rooms, and view occupancy stats</li>
         </ul>
       </div>
 
