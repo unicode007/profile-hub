@@ -328,6 +328,18 @@ export const HotelManager = () => {
                 addBooking(bookingData as Booking);
               }
             }}
+            onCheckIn={handleCheckIn}
+            onCheckOut={handleCheckOut}
+            onCancelBooking={handleCancelBooking}
+            onUpdateBookingStatus={(bookingId, status) => {
+              // Use existing context method
+              const booking = allBookings.find(b => b.id === bookingId);
+              if (booking) {
+                if (status === "checked-in") handleCheckIn(bookingId);
+                else if (status === "checked-out") handleCheckOut(bookingId);
+                else if (status === "cancelled") handleCancelBooking(bookingId);
+              }
+            }}
           />
         )}
       </div>
