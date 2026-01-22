@@ -6,6 +6,9 @@ import { BookingCalendar } from "./BookingCalendar";
 import { ShareCalendarModal } from "./ShareCalendarModal";
 import { QuickBookingModal } from "./QuickBookingModal";
 import { RoomTypeManager } from "./RoomTypeManager";
+import { KanbanBoard } from "./KanbanBoard";
+import { PhysicalRoomManager, PhysicalRoom } from "./PhysicalRoomManager";
+import { RoomAssignmentModal } from "./RoomAssignmentModal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,6 +35,9 @@ import {
   List,
   Maximize2,
   Bed,
+  Kanban,
+  DoorClosed,
+  Key,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
@@ -42,7 +48,34 @@ interface AvailabilityViewProps {
   onViewBooking: (booking: Booking) => void;
   onMoveBooking: (bookingId: string, newCheckIn: Date, newCheckOut: Date) => void;
   onCreateBooking?: (booking: Partial<Booking>) => void;
+  onCheckIn?: (bookingId: string) => void;
+  onCheckOut?: (bookingId: string) => void;
+  onCancelBooking?: (bookingId: string) => void;
+  onUpdateBookingStatus?: (bookingId: string, status: Booking["status"]) => void;
 }
+
+// Generate demo physical rooms
+const generateDemoPhysicalRooms = (hotels: Hotel[]): PhysicalRoom[] => {
+  const rooms: PhysicalRoom[] = [];
+  hotels.forEach((hotel) => {
+    hotel.roomTypes.forEach((roomType, rtIndex) => {
+      for (let i = 1; i <= 5; i++) {
+        const floor = Math.floor((rtIndex * 5 + i - 1) / 5) + 1;
+        const roomNum = `${floor}${String(rtIndex * 10 + i).padStart(2, "0")}`;
+        rooms.push({
+          id: `${hotel.id}-${roomType.id}-${i}`,
+          roomNumber: roomNum,
+          floor,
+          roomTypeId: roomType.id,
+          status: i === 1 ? "occupied" : i === 2 ? "dirty" : "available",
+          keyCardNumber: `KC-${roomNum}`,
+          lastCleaned: new Date(),
+        });
+      }
+    });
+  });
+  return rooms;
+};
 
 export const AvailabilityView = ({
   hotels,
@@ -51,15 +84,25 @@ export const AvailabilityView = ({
   onViewBooking,
   onMoveBooking,
   onCreateBooking,
+  onCheckIn,
+  onCheckOut,
+  onCancelBooking,
+  onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical">("room");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
   const [selectedDateForBooking, setSelectedDateForBooking] = useState<Date | undefined>();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [viewDensity, setViewDensity] = useState<"compact" | "comfortable">("comfortable");
+  const [physicalRooms, setPhysicalRooms] = useState<PhysicalRoom[]>(() => generateDemoPhysicalRooms(hotels));
+  const [roomAssignmentModal, setRoomAssignmentModal] = useState<{
+    isOpen: boolean;
+    booking: Booking | null;
+    mode: "assign" | "checkout";
+  }>({ isOpen: false, booking: null, mode: "assign" });
   
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedHotel = hotels.find((h) => h.id === selectedHotelId);
@@ -322,22 +365,30 @@ export const AvailabilityView = ({
 
       {/* Calendar Type Tabs */}
       <Tabs value={calendarType} onValueChange={(v) => setCalendarType(v as typeof calendarType)}>
-        <TabsList className="grid w-full max-w-2xl grid-cols-4">
+        <TabsList className="grid w-full max-w-4xl grid-cols-6">
           <TabsTrigger value="room" className="gap-2">
             <Grid3X3 className="h-4 w-4" />
-            Room Grid
+            <span className="hidden sm:inline">Room Grid</span>
           </TabsTrigger>
           <TabsTrigger value="date" className="gap-2">
             <CalendarCheck className="h-4 w-4" />
-            Date View
+            <span className="hidden sm:inline">Date View</span>
           </TabsTrigger>
           <TabsTrigger value="booking" className="gap-2">
             <CalendarRange className="h-4 w-4" />
-            Bookings
+            <span className="hidden sm:inline">Bookings</span>
+          </TabsTrigger>
+          <TabsTrigger value="kanban" className="gap-2">
+            <Kanban className="h-4 w-4" />
+            <span className="hidden sm:inline">Kanban</span>
+          </TabsTrigger>
+          <TabsTrigger value="physical" className="gap-2">
+            <DoorClosed className="h-4 w-4" />
+            <span className="hidden sm:inline">Rooms</span>
           </TabsTrigger>
           <TabsTrigger value="rooms" className="gap-2">
             <Bed className="h-4 w-4" />
-            Room Types
+            <span className="hidden sm:inline">Types</span>
           </TabsTrigger>
         </TabsList>
 
@@ -376,6 +427,53 @@ export const AvailabilityView = ({
           />
         </TabsContent>
 
+        <TabsContent value="kanban" className="mt-6">
+          <KanbanBoard
+            hotels={hotels}
+            bookings={bookings}
+            onViewBooking={onViewBooking}
+            onCheckIn={(id) => {
+              const booking = bookings.find((b) => b.id === id);
+              if (booking) {
+                setRoomAssignmentModal({ isOpen: true, booking, mode: "assign" });
+              }
+            }}
+            onCheckOut={(id) => {
+              const booking = bookings.find((b) => b.id === id);
+              if (booking) {
+                setRoomAssignmentModal({ isOpen: true, booking, mode: "checkout" });
+              }
+            }}
+            onCancelBooking={onCancelBooking}
+            onUpdateBookingStatus={onUpdateBookingStatus}
+            onQuickBook={() => handleQuickBooking()}
+            onAssignRoom={(booking) => {
+              setRoomAssignmentModal({ isOpen: true, booking, mode: "assign" });
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="physical" className="mt-6">
+          {selectedHotel && (
+            <PhysicalRoomManager
+              hotel={selectedHotel}
+              bookings={bookings}
+              physicalRooms={physicalRooms.filter((r) => 
+                selectedHotel.roomTypes.some((rt) => rt.id === r.roomTypeId)
+              )}
+              onUpdateRooms={(rooms) => {
+                const otherRooms = physicalRooms.filter((r) => 
+                  !selectedHotel.roomTypes.some((rt) => rt.id === r.roomTypeId)
+                );
+                setPhysicalRooms([...otherRooms, ...rooms]);
+              }}
+              onAssignRoom={(bookingId, roomNumber, keyCard) => {
+                toast.success(`Room ${roomNumber} assigned with key ${keyCard}`);
+              }}
+            />
+          )}
+        </TabsContent>
+
         <TabsContent value="rooms" className="mt-6">
           {selectedHotel && (
             <RoomTypeManager
@@ -390,10 +488,11 @@ export const AvailabilityView = ({
       <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
         <p className="font-medium mb-2">💡 Calendar Tips:</p>
         <ul className="list-disc list-inside space-y-1">
-          <li><strong>Room Grid:</strong> View room-by-room availability, drag bookings to reschedule, hover for details</li>
-          <li><strong>Date View:</strong> See daily availability with color-coded status, click to quick book</li>
-          <li><strong>Bookings:</strong> Track check-ins, check-outs, and guest stays across all hotels</li>
-          <li><strong>Room Types:</strong> Manage room inventory, block rooms, and view occupancy stats</li>
+          <li><strong>Room Grid:</strong> View room-by-room availability, drag bookings to reschedule</li>
+          <li><strong>Date View:</strong> See daily availability with color-coded status</li>
+          <li><strong>Kanban:</strong> Drag bookings between status columns for quick updates</li>
+          <li><strong>Rooms:</strong> Manage physical rooms, assign at check-in, track cleaning status</li>
+          <li><strong>Types:</strong> Manage room inventory, block rooms, view occupancy stats</li>
         </ul>
       </div>
 
@@ -402,7 +501,7 @@ export const AvailabilityView = ({
         isOpen={isShareModalOpen}
         onClose={() => setIsShareModalOpen(false)}
         hotelName={selectedHotel?.name}
-        calendarType={calendarType}
+        calendarType={calendarType as "room" | "date" | "booking"}
         currentMonth={currentMonth}
         onExport={handleExport}
       />
@@ -417,6 +516,40 @@ export const AvailabilityView = ({
         onCreateBooking={(booking) => {
           onCreateBooking?.(booking);
           setIsQuickBookingOpen(false);
+        }}
+      />
+
+      {/* Room Assignment Modal */}
+      <RoomAssignmentModal
+        isOpen={roomAssignmentModal.isOpen}
+        onClose={() => setRoomAssignmentModal({ isOpen: false, booking: null, mode: "assign" })}
+        booking={roomAssignmentModal.booking}
+        hotel={selectedHotel || null}
+        physicalRooms={physicalRooms}
+        mode={roomAssignmentModal.mode}
+        onAssignRoom={(bookingId, roomId, keyCard) => {
+          // Update physical room status
+          setPhysicalRooms((prev) =>
+            prev.map((r) =>
+              r.id === roomId
+                ? { ...r, status: "occupied" as const, currentBookingId: bookingId, keyCardNumber: keyCard }
+                : r
+            )
+          );
+          onCheckIn?.(bookingId);
+        }}
+        onCheckIn={onCheckIn}
+        onUpdateRoomStatus={(roomId, status) => {
+          setPhysicalRooms((prev) =>
+            prev.map((r) =>
+              r.id === roomId
+                ? { ...r, status, currentBookingId: undefined }
+                : r
+            )
+          );
+          if (roomAssignmentModal.booking) {
+            onCheckOut?.(roomAssignmentModal.booking.id);
+          }
         }}
       />
     </div>
