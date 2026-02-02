@@ -50,6 +50,9 @@ export interface PhysicalRoom {
   roomNumber: string;
   floor: number;
   roomTypeId: string;
+  hotelId: string;
+  hotelName?: string;
+  roomTypeName?: string;
   status: "available" | "occupied" | "dirty" | "cleaning" | "maintenance" | "blocked";
   keyCardNumber?: string;
   lastCleaned?: Date;
@@ -173,11 +176,16 @@ export const PhysicalRoomManager = ({
       return;
     }
 
+    const roomType = hotel.roomTypes.find((rt) => rt.id === formData.roomTypeId);
+
     const newRoom: PhysicalRoom = {
       id: `room-${Date.now()}`,
       roomNumber: formData.roomNumber,
       floor: formData.floor,
       roomTypeId: formData.roomTypeId,
+      hotelId: hotel.id,
+      hotelName: hotel.name,
+      roomTypeName: roomType?.name,
       status: "available",
       keyCardNumber: formData.keyCardNumber,
       notes: formData.notes,

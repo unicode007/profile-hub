@@ -39,6 +39,7 @@ interface RoomTypeManagerProps {
   bookings: Booking[];
   onUpdateHotel?: (hotel: Hotel) => void;
   onBlockRoom?: (roomTypeId: string, dates: Date[], reason: string) => void;
+  onAddRoomType?: () => void;
 }
 
 interface BlockedRoom {
@@ -62,6 +63,7 @@ export const RoomTypeManager = ({
   bookings,
   onUpdateHotel,
   onBlockRoom,
+  onAddRoomType,
 }: RoomTypeManagerProps) => {
   const [selectedRoom, setSelectedRoom] = useState<RoomType | null>(null);
   const [blockedRooms, setBlockedRooms] = useState<BlockedRoom[]>([]);
@@ -223,7 +225,7 @@ export const RoomTypeManager = ({
               <Bed className="h-5 w-5 text-primary" />
               Room Types
             </CardTitle>
-            <Button variant="outline" size="sm" className="gap-2">
+            <Button variant="outline" size="sm" className="gap-2" onClick={onAddRoomType}>
               <Plus className="h-4 w-4" />
               Add Room Type
             </Button>

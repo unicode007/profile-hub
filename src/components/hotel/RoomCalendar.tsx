@@ -37,6 +37,9 @@ interface RoomCalendarProps {
   onViewBooking?: (booking: Booking) => void;
   onQuickBook?: (date: Date, roomType: RoomType) => void;
   viewDensity?: "compact" | "comfortable";
+  onShowBookings?: (bookings: Booking[], title: string, subtitle?: string) => void;
+  onCheckIn?: (bookingId: string) => void;
+  onCheckOut?: (bookingId: string) => void;
 }
 
 export const RoomCalendar = ({
@@ -46,6 +49,9 @@ export const RoomCalendar = ({
   onViewBooking,
   onQuickBook,
   viewDensity = "comfortable",
+  onShowBookings,
+  onCheckIn,
+  onCheckOut,
 }: RoomCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedRoom, setSelectedRoom] = useState<string>("all");
@@ -311,25 +317,44 @@ export const RoomCalendar = ({
                     </td>
                     {daysInMonth.map((day, dayIndex) => {
                       const dayBookings = getBookingsForDay(day, room.name);
+                      const hasMultipleBookings = dayBookings.length > 1;
                       const isBooked = dayBookings.length > 0;
                       const booking = dayBookings[0];
-                      const isToday = isSameDay(day, today);
-                      const isWeekend = day.getDay() === 0 || day.getDay() === 6;
-                      const cellKey = `${room.id}-${day.toISOString()}`;
-                      const isHovered = hoveredCell === cellKey;
-                      const position = booking ? getBookingPosition(booking, day) : null;
+                      const isDayToday = isSameDay(day, today);
+                      const isDayWeekend = day.getDay() === 0 || day.getDay() === 6;
+                      const dayCellKey = `${room.id}-${day.toISOString()}`;
+                      const isDayHovered = hoveredCell === dayCellKey;
+                      const bookingPosition = booking ? getBookingPosition(booking, day) : null;
 
                       return (
                         <td
                           key={day.toISOString()}
                           className={`border-b p-0 ${cellHeight} relative transition-colors ${
-                            isToday ? "bg-primary/10" : isWeekend ? "bg-muted/20" : ""
-                          } ${isHovered && !isBooked ? "bg-primary/5" : ""}`}
+                            isDayToday ? "bg-primary/10" : isDayWeekend ? "bg-muted/20" : ""
+                          } ${isDayHovered && !isBooked ? "bg-primary/5" : ""}`}
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={() => handleDrop(day, room.name)}
-                          onMouseEnter={() => setHoveredCell(cellKey)}
+                          onMouseEnter={() => setHoveredCell(dayCellKey)}
                           onMouseLeave={() => setHoveredCell(null)}
                         >
+                          {/* Multiple bookings indicator */}
+                          {hasMultipleBookings && bookingPosition?.isStart && (
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              className="absolute top-0 right-0 h-4 w-4 p-0 text-xs z-20 rounded-full"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onShowBookings?.(
+                                  dayBookings,
+                                  `Bookings on ${format(day, "MMM d, yyyy")}`,
+                                  `${room.name}`
+                                );
+                              }}
+                            >
+                              {dayBookings.length}
+                            </Button>
+                          )}
                           {isBooked && booking && booking.status !== "cancelled" && (
                             <CalendarHoverCard 
                               booking={booking} 
@@ -338,13 +363,13 @@ export const RoomCalendar = ({
                             >
                               <div
                                 className={`${barHeight} my-auto mx-0 cursor-pointer ${getBookingColor(booking.status)} transition-all flex items-center ${
-                                  position?.isStart ? "ml-1 rounded-l-md" : ""
-                                } ${position?.isEnd ? "mr-1 rounded-r-md" : ""}`}
+                                  bookingPosition?.isStart ? "ml-1 rounded-l-md" : ""
+                                } ${bookingPosition?.isEnd ? "mr-1 rounded-r-md" : ""}`}
                                 draggable
                                 onDragStart={() => handleDragStart(booking, dayIndex)}
                                 onClick={() => onViewBooking?.(booking)}
                               >
-                                {position?.isStart && (
+                                {bookingPosition?.isStart && (
                                   <div className={`px-1.5 text-white truncate flex items-center gap-1 h-full ${fontSize}`}>
                                     <GripVertical className="h-3 w-3 opacity-50" />
                                     <User className="h-3 w-3 flex-shrink-0" />
@@ -356,7 +381,7 @@ export const RoomCalendar = ({
                           )}
                           
                           {/* Quick book button on hover for empty cells */}
-                          {!isBooked && isHovered && onQuickBook && (
+                          {!isBooked && isDayHovered && onQuickBook && (
                             <Button
                               size="icon"
                               variant="ghost"
