@@ -6,9 +6,12 @@ import { BookingCalendar } from "./BookingCalendar";
 import { ShareCalendarModal } from "./ShareCalendarModal";
 import { QuickBookingModal } from "./QuickBookingModal";
 import { RoomTypeManager } from "./RoomTypeManager";
+import { RoomTypeModal } from "./RoomTypeModal";
 import { KanbanBoard } from "./KanbanBoard";
 import { PhysicalRoomManager, PhysicalRoom } from "./PhysicalRoomManager";
 import { RoomAssignmentModal } from "./RoomAssignmentModal";
+import { HousekeepingManager } from "./HousekeepingManager";
+import { BookingPopupList } from "./BookingPopupList";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -38,6 +41,7 @@ import {
   Kanban,
   DoorClosed,
   Key,
+  Sparkles,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
@@ -67,6 +71,9 @@ const generateDemoPhysicalRooms = (hotels: Hotel[]): PhysicalRoom[] => {
           roomNumber: roomNum,
           floor,
           roomTypeId: roomType.id,
+          hotelId: hotel.id,
+          hotelName: hotel.name,
+          roomTypeName: roomType.name,
           status: i === 1 ? "occupied" : i === 2 ? "dirty" : "available",
           keyCardNumber: `KC-${roomNum}`,
           lastCleaned: new Date(),
@@ -90,7 +97,7 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping">("room");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
@@ -103,6 +110,13 @@ export const AvailabilityView = ({
     booking: Booking | null;
     mode: "assign" | "checkout";
   }>({ isOpen: false, booking: null, mode: "assign" });
+  const [isRoomTypeModalOpen, setIsRoomTypeModalOpen] = useState(false);
+  const [bookingPopup, setBookingPopup] = useState<{
+    open: boolean;
+    bookings: Booking[];
+    title: string;
+    subtitle?: string;
+  }>({ open: false, bookings: [], title: "" });
   
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedHotel = hotels.find((h) => h.id === selectedHotelId);
@@ -365,7 +379,7 @@ export const AvailabilityView = ({
 
       {/* Calendar Type Tabs */}
       <Tabs value={calendarType} onValueChange={(v) => setCalendarType(v as typeof calendarType)}>
-        <TabsList className="grid w-full max-w-4xl grid-cols-6">
+        <TabsList className="grid w-full max-w-5xl grid-cols-7">
           <TabsTrigger value="room" className="gap-2">
             <Grid3X3 className="h-4 w-4" />
             <span className="hidden sm:inline">Room Grid</span>
@@ -390,6 +404,10 @@ export const AvailabilityView = ({
             <Bed className="h-4 w-4" />
             <span className="hidden sm:inline">Types</span>
           </TabsTrigger>
+          <TabsTrigger value="housekeeping" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            <span className="hidden sm:inline">Housekeeping</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -404,6 +422,11 @@ export const AvailabilityView = ({
                 setIsQuickBookingOpen(true);
               }}
               viewDensity={viewDensity}
+              onShowBookings={(bookings, title, subtitle) => {
+                setBookingPopup({ open: true, bookings, title, subtitle });
+              }}
+              onCheckIn={onCheckIn}
+              onCheckOut={onCheckOut}
             />
           )}
         </TabsContent>
@@ -479,8 +502,24 @@ export const AvailabilityView = ({
             <RoomTypeManager
               hotel={selectedHotel}
               bookings={bookings}
+              onAddRoomType={() => setIsRoomTypeModalOpen(true)}
             />
           )}
+        </TabsContent>
+
+        <TabsContent value="housekeeping" className="mt-6">
+          <HousekeepingManager
+            hotels={hotels}
+            physicalRooms={physicalRooms}
+            bookings={bookings}
+            onUpdateRoomStatus={(roomId, status) => {
+              setPhysicalRooms((prev) =>
+                prev.map((r) =>
+                  r.id === roomId ? { ...r, status } : r
+                )
+              );
+            }}
+          />
         </TabsContent>
       </Tabs>
 
@@ -551,6 +590,31 @@ export const AvailabilityView = ({
             onCheckOut?.(roomAssignmentModal.booking.id);
           }
         }}
+      />
+
+      {/* Room Type Modal */}
+      <RoomTypeModal
+        open={isRoomTypeModalOpen}
+        onOpenChange={setIsRoomTypeModalOpen}
+        hotels={hotels}
+        onSave={(roomType, hotelIds) => {
+          toast.success(`Room type "${roomType.name}" saved to ${hotelIds.length} hotel(s)`);
+        }}
+      />
+
+      {/* Booking Popup List */}
+      <BookingPopupList
+        open={bookingPopup.open}
+        onOpenChange={(open) => setBookingPopup((prev) => ({ ...prev, open }))}
+        bookings={bookingPopup.bookings}
+        title={bookingPopup.title}
+        subtitle={bookingPopup.subtitle}
+        onViewBooking={(booking) => {
+          onViewBooking(booking);
+          setBookingPopup((prev) => ({ ...prev, open: false }));
+        }}
+        onCheckIn={onCheckIn}
+        onCheckOut={onCheckOut}
       />
     </div>
   );
