@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { Booking, Hotel, RoomType } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -303,111 +303,148 @@ export const RoomCalendar = ({
             </thead>
             <tbody>
               {roomsToShow.map((room) => {
-                // Calculate booking count for this room type
+                // Get all bookings for this room type (non-cancelled)
                 const roomBookings = hotelBookings.filter(
                   (b) => b.roomName === room.name && b.status !== "cancelled"
                 );
                 const bookingCount = roomBookings.length;
 
-                return (
-                  <tr key={room.id} className="group">
-                    <td className="border-r p-2 sticky left-0 bg-background z-10">
-                      <CalendarHoverCard roomType={room}>
-                        <div className="cursor-pointer hover:bg-muted/50 -m-2 p-2 rounded transition-colors">
-                          <div className="flex items-center justify-between">
-                            <div className="font-medium text-sm">{room.name}</div>
-                            {bookingCount > 0 && (
-                              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
-                                {bookingCount}
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {room.bedCount} {room.bedType}
-                          </div>
-                        </div>
-                      </CalendarHoverCard>
-                    </td>
-                    {daysInMonth.map((day, dayIndex) => {
-                      const dayBookings = getBookingsForDay(day, room.name);
-                      const hasMultipleBookings = dayBookings.length > 1;
-                      const isBooked = dayBookings.length > 0;
-                      const booking = dayBookings[0];
-                      const isDayToday = isSameDay(day, today);
-                      const isDayWeekend = day.getDay() === 0 || day.getDay() === 6;
-                      const dayCellKey = `${room.id}-${day.toISOString()}`;
-                      const isDayHovered = hoveredCell === dayCellKey;
-                      const bookingPosition = booking ? getBookingPosition(booking, day) : null;
+                // Assign each booking to a "lane" to avoid overlaps
+                const bookingLanes: Booking[][] = [];
+                
+                // Sort bookings by check-in date
+                const sortedBookings = [...roomBookings].sort(
+                  (a, b) => new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime()
+                );
 
-                      return (
-                        <td
-                          key={day.toISOString()}
-                          className={`border-b p-0 ${cellHeight} relative transition-colors ${
-                            isDayToday ? "bg-primary/10" : isDayWeekend ? "bg-muted/20" : ""
-                          } ${isDayHovered && !isBooked ? "bg-primary/5" : ""}`}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={() => handleDrop(day, room.name)}
-                          onMouseEnter={() => setHoveredCell(dayCellKey)}
-                          onMouseLeave={() => setHoveredCell(null)}
-                        >
-                          {/* Multiple bookings indicator */}
-                          {hasMultipleBookings && bookingPosition?.isStart && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="absolute top-0 right-0 h-4 w-4 p-0 text-xs z-20 rounded-full"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onShowBookings?.(
-                                  dayBookings,
-                                  `Bookings on ${format(day, "MMM d, yyyy")}`,
-                                  `${room.name}`
-                                );
-                              }}
-                            >
-                              {dayBookings.length}
-                            </Button>
-                          )}
-                          {isBooked && booking && booking.status !== "cancelled" && (
-                            <CalendarHoverCard 
-                              booking={booking} 
-                              onViewBooking={onViewBooking}
-                              side="bottom"
-                            >
-                              <div
-                                className={`${barHeight} my-auto mx-0 cursor-pointer ${getBookingColor(booking.status)} transition-all flex items-center ${
-                                  bookingPosition?.isStart ? "ml-1 rounded-l-md" : ""
-                                } ${bookingPosition?.isEnd ? "mr-1 rounded-r-md" : ""}`}
-                                draggable
-                                onDragStart={() => handleDragStart(booking, dayIndex)}
-                                onClick={() => onViewBooking?.(booking)}
-                              >
-                                {bookingPosition?.isStart && (
-                                  <div className={`px-1.5 text-white truncate flex items-center gap-1 h-full ${fontSize}`}>
-                                    <GripVertical className="h-3 w-3 opacity-50" />
-                                    <User className="h-3 w-3 flex-shrink-0" />
-                                    <span className="truncate">{booking.guestInfo.firstName}</span>
-                                  </div>
-                                )}
+                // Assign bookings to lanes (greedy algorithm)
+                sortedBookings.forEach((booking) => {
+                  const bookingStart = startOfDay(new Date(booking.checkIn));
+                  const bookingEnd = startOfDay(new Date(booking.checkOut));
+                  
+                  // Find a lane where this booking fits
+                  let laneIndex = bookingLanes.findIndex((lane) => {
+                    return lane.every((existingBooking) => {
+                      const existingEnd = startOfDay(new Date(existingBooking.checkOut));
+                      const existingStart = startOfDay(new Date(existingBooking.checkIn));
+                      // Booking fits if it ends before existing starts or starts after existing ends
+                      return bookingEnd <= existingStart || bookingStart >= existingEnd;
+                    });
+                  });
+                  
+                  if (laneIndex === -1) {
+                    // No suitable lane found, create a new one
+                    laneIndex = bookingLanes.length;
+                    bookingLanes.push([]);
+                  }
+                  
+                  bookingLanes[laneIndex].push(booking);
+                });
+
+                // Ensure at least one lane for empty cells
+                if (bookingLanes.length === 0) {
+                  bookingLanes.push([]);
+                }
+
+                return (
+                  <React.Fragment key={room.id}>
+                    {bookingLanes.map((lane, laneIndex) => (
+                      <tr key={`${room.id}-lane-${laneIndex}`} className="group">
+                        {/* Room info only on first lane */}
+                        {laneIndex === 0 ? (
+                          <td 
+                            className="border-r p-2 sticky left-0 bg-background z-10"
+                            rowSpan={bookingLanes.length}
+                          >
+                            <CalendarHoverCard roomType={room}>
+                              <div className="cursor-pointer hover:bg-muted/50 -m-2 p-2 rounded transition-colors">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="font-medium text-sm">{room.name}</div>
+                                  {bookingCount > 0 && (
+                                    <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                      {bookingCount}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {room.bedCount} {room.bedType}
+                                </div>
                               </div>
                             </CalendarHoverCard>
-                          )}
+                          </td>
+                        ) : null}
+                        
+                        {/* Day cells for this lane */}
+                        {daysInMonth.map((day, dayIndex) => {
+                          // Find booking in this lane for this day
+                          const booking = lane.find((b) => {
+                            const checkIn = startOfDay(new Date(b.checkIn));
+                            const checkOut = startOfDay(new Date(b.checkOut));
+                            return isWithinInterval(startOfDay(day), {
+                              start: checkIn,
+                              end: addDays(checkOut, -1),
+                            });
+                          });
                           
-                          {/* Quick book button on hover for empty cells */}
-                          {!isBooked && isDayHovered && onQuickBook && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="absolute inset-0 w-full h-full opacity-0 hover:opacity-100 transition-opacity"
-                              onClick={() => onQuickBook(day, room)}
+                          const isDayToday = isSameDay(day, today);
+                          const isDayWeekend = day.getDay() === 0 || day.getDay() === 6;
+                          const dayCellKey = `${room.id}-${laneIndex}-${day.toISOString()}`;
+                          const isDayHovered = hoveredCell === dayCellKey;
+                          const bookingPosition = booking ? getBookingPosition(booking, day) : null;
+
+                          return (
+                            <td
+                              key={day.toISOString()}
+                              className={`border-b p-0 ${cellHeight} relative transition-colors ${
+                                isDayToday ? "bg-primary/10" : isDayWeekend ? "bg-muted/20" : ""
+                              } ${isDayHovered && !booking ? "bg-primary/5" : ""}`}
+                              onDragOver={(e) => e.preventDefault()}
+                              onDrop={() => handleDrop(day, room.name)}
+                              onMouseEnter={() => setHoveredCell(dayCellKey)}
+                              onMouseLeave={() => setHoveredCell(null)}
                             >
-                              <Plus className="h-4 w-4 text-primary" />
-                            </Button>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
+                              {booking && booking.status !== "cancelled" && (
+                                <CalendarHoverCard 
+                                  booking={booking} 
+                                  onViewBooking={onViewBooking}
+                                  side="bottom"
+                                >
+                                  <div
+                                    className={`${barHeight} my-auto mx-0 cursor-pointer ${getBookingColor(booking.status)} transition-all flex items-center ${
+                                      bookingPosition?.isStart ? "ml-0.5 rounded-l-md" : ""
+                                    } ${bookingPosition?.isEnd ? "mr-0.5 rounded-r-md" : ""}`}
+                                    draggable
+                                    onDragStart={() => handleDragStart(booking, dayIndex)}
+                                    onClick={() => onViewBooking?.(booking)}
+                                  >
+                                    {bookingPosition?.isStart && (
+                                      <div className={`px-1.5 text-white truncate flex items-center gap-1 h-full ${fontSize}`}>
+                                        <GripVertical className="h-3 w-3 opacity-50 flex-shrink-0" />
+                                        <User className="h-3 w-3 flex-shrink-0" />
+                                        <span className="truncate">{booking.guestInfo.firstName}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                </CalendarHoverCard>
+                              )}
+                              
+                              {/* Quick book button on hover for empty cells (only first lane) */}
+                              {!booking && isDayHovered && onQuickBook && laneIndex === 0 && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="absolute inset-0 w-full h-full opacity-0 hover:opacity-100 transition-opacity"
+                                  onClick={() => onQuickBook(day, room)}
+                                >
+                                  <Plus className="h-4 w-4 text-primary" />
+                                </Button>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 );
               })}
             </tbody>
