@@ -303,12 +303,25 @@ export const RoomCalendar = ({
             </thead>
             <tbody>
               {roomsToShow.map((room) => {
+                // Calculate booking count for this room type
+                const roomBookings = hotelBookings.filter(
+                  (b) => b.roomName === room.name && b.status !== "cancelled"
+                );
+                const bookingCount = roomBookings.length;
+
                 return (
                   <tr key={room.id} className="group">
                     <td className="border-r p-2 sticky left-0 bg-background z-10">
                       <CalendarHoverCard roomType={room}>
                         <div className="cursor-pointer hover:bg-muted/50 -m-2 p-2 rounded transition-colors">
-                          <div className="font-medium text-sm">{room.name}</div>
+                          <div className="flex items-center justify-between">
+                            <div className="font-medium text-sm">{room.name}</div>
+                            {bookingCount > 0 && (
+                              <Badge variant="secondary" className="text-[10px] h-5 px-1.5">
+                                {bookingCount}
+                              </Badge>
+                            )}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {room.bedCount} {room.bedType}
                           </div>

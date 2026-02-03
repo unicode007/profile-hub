@@ -9,6 +9,7 @@ import { RoomTypeManager } from "./RoomTypeManager";
 import { RoomTypeModal } from "./RoomTypeModal";
 import { KanbanBoard } from "./KanbanBoard";
 import { PhysicalRoomManager, PhysicalRoom } from "./PhysicalRoomManager";
+import { PhysicalRoomCalendar } from "./PhysicalRoomCalendar";
 import { RoomAssignmentModal } from "./RoomAssignmentModal";
 import { HousekeepingManager } from "./HousekeepingManager";
 import { BookingPopupList } from "./BookingPopupList";
@@ -42,6 +43,7 @@ import {
   DoorClosed,
   Key,
   Sparkles,
+  LayoutList,
 } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
@@ -97,7 +99,7 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid">("room");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
@@ -379,33 +381,37 @@ export const AvailabilityView = ({
 
       {/* Calendar Type Tabs */}
       <Tabs value={calendarType} onValueChange={(v) => setCalendarType(v as typeof calendarType)}>
-        <TabsList className="grid w-full max-w-5xl grid-cols-7">
-          <TabsTrigger value="room" className="gap-2">
-            <Grid3X3 className="h-4 w-4" />
+        <TabsList className="grid w-full max-w-6xl grid-cols-4 lg:grid-cols-8">
+          <TabsTrigger value="room" className="gap-1.5 text-xs">
+            <Grid3X3 className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Room Grid</span>
           </TabsTrigger>
-          <TabsTrigger value="date" className="gap-2">
-            <CalendarCheck className="h-4 w-4" />
+          <TabsTrigger value="physicalGrid" className="gap-1.5 text-xs">
+            <LayoutList className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Room No.</span>
+          </TabsTrigger>
+          <TabsTrigger value="date" className="gap-1.5 text-xs">
+            <CalendarCheck className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Date View</span>
           </TabsTrigger>
-          <TabsTrigger value="booking" className="gap-2">
-            <CalendarRange className="h-4 w-4" />
+          <TabsTrigger value="booking" className="gap-1.5 text-xs">
+            <CalendarRange className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Bookings</span>
           </TabsTrigger>
-          <TabsTrigger value="kanban" className="gap-2">
-            <Kanban className="h-4 w-4" />
+          <TabsTrigger value="kanban" className="gap-1.5 text-xs">
+            <Kanban className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Kanban</span>
           </TabsTrigger>
-          <TabsTrigger value="physical" className="gap-2">
-            <DoorClosed className="h-4 w-4" />
+          <TabsTrigger value="physical" className="gap-1.5 text-xs">
+            <DoorClosed className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Rooms</span>
           </TabsTrigger>
-          <TabsTrigger value="rooms" className="gap-2">
-            <Bed className="h-4 w-4" />
+          <TabsTrigger value="rooms" className="gap-1.5 text-xs">
+            <Bed className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Types</span>
           </TabsTrigger>
-          <TabsTrigger value="housekeeping" className="gap-2">
-            <Sparkles className="h-4 w-4" />
+          <TabsTrigger value="housekeeping" className="gap-1.5 text-xs">
+            <Sparkles className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Housekeeping</span>
           </TabsTrigger>
         </TabsList>
@@ -427,6 +433,25 @@ export const AvailabilityView = ({
               }}
               onCheckIn={onCheckIn}
               onCheckOut={onCheckOut}
+            />
+          )}
+        </TabsContent>
+
+        <TabsContent value="physicalGrid" className="mt-6">
+          {selectedHotel && (
+            <PhysicalRoomCalendar
+              hotel={selectedHotel}
+              bookings={bookings}
+              physicalRooms={physicalRooms}
+              onViewBooking={onViewBooking}
+              onQuickBook={(date, room) => {
+                setSelectedDateForBooking(date);
+                setIsQuickBookingOpen(true);
+              }}
+              viewDensity={viewDensity}
+              onShowBookings={(bookings, title, subtitle) => {
+                setBookingPopup({ open: true, bookings, title, subtitle });
+              }}
             />
           )}
         </TabsContent>
@@ -526,12 +551,13 @@ export const AvailabilityView = ({
       {/* Tips Section */}
       <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
         <p className="font-medium mb-2">💡 Calendar Tips:</p>
-        <ul className="list-disc list-inside space-y-1">
-          <li><strong>Room Grid:</strong> View room-by-room availability, drag bookings to reschedule</li>
-          <li><strong>Date View:</strong> See daily availability with color-coded status</li>
-          <li><strong>Kanban:</strong> Drag bookings between status columns for quick updates</li>
-          <li><strong>Rooms:</strong> Manage physical rooms, assign at check-in, track cleaning status</li>
-          <li><strong>Types:</strong> Manage room inventory, block rooms, view occupancy stats</li>
+        <ul className="list-disc list-inside space-y-1 grid md:grid-cols-2 gap-1">
+          <li><strong>Room Grid:</strong> Room type availability with drag to reschedule</li>
+          <li><strong>Room No.:</strong> Physical room-wise grid (like the screenshot)</li>
+          <li><strong>Date View:</strong> Daily availability with color-coded status</li>
+          <li><strong>Kanban:</strong> Drag bookings between status columns</li>
+          <li><strong>Rooms:</strong> Manage physical rooms, assign at check-in</li>
+          <li><strong>Types:</strong> Manage room inventory, block rooms</li>
         </ul>
       </div>
 
