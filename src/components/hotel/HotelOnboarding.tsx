@@ -6,7 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Building2, MapPin, Bed, CheckCircle2, ChevronRight, ImageIcon } from "lucide-react";
+ import { Badge } from "@/components/ui/badge";
+ import { Progress } from "@/components/ui/progress";
+ import { Separator } from "@/components/ui/separator";
+ import { Switch } from "@/components/ui/switch";
+ import { Building2, MapPin, Bed, CheckCircle2, ChevronRight, ImageIcon, Package, AlertCircle, Check } from "lucide-react";
 import { AmenitiesSection } from "./AmenitiesSection";
 import { RoomTypeForm } from "./RoomTypeForm";
 import { ImageUpload } from "./ImageUpload";
@@ -17,6 +21,14 @@ interface HotelOnboardingProps {
   onHotelCreated: (hotel: Hotel) => void;
 }
 
+ interface RoomInventorySetup {
+   roomTypeId: string;
+   totalRooms: number;
+   basePrice: number;
+   overbookingAllowed: boolean;
+   overbookingLimit: number;
+ }
+ 
 const initialAmenities = {
   basicFacilities: [],
   generalServices: [],
@@ -46,6 +58,8 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
   });
   const [amenities, setAmenities] = useState(initialAmenities);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
+   const [roomInventory, setRoomInventory] = useState<RoomInventorySetup[]>([]);
+   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
 
   const handleAmenityChange = (category: string, amenity: string, checked: boolean) => {
     setAmenities((prev) => ({
@@ -56,6 +70,54 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
     }));
   };
 
+   // Track step completion
+   const updateStepCompletion = (step: string, completed: boolean) => {
+     if (completed && !completedSteps.includes(step)) {
+       setCompletedSteps([...completedSteps, step]);
+     } else if (!completed && completedSteps.includes(step)) {
+       setCompletedSteps(completedSteps.filter(s => s !== step));
+     }
+   };
+ 
+   // Validation checks
+   const isBasicComplete = hotelName.length > 0 && category.length > 0;
+   const isLocationComplete = location.city.length > 0;
+   const isRoomsComplete = roomTypes.length > 0;
+   const isInventoryComplete = roomInventory.length > 0 && roomInventory.every(inv => inv.totalRooms > 0);
+ 
+   const totalSteps = 6;
+   const completedCount = [
+     isBasicComplete,
+     hotelImages.length > 0,
+     isLocationComplete,
+     Object.values(amenities).some(arr => arr.length > 0),
+     isRoomsComplete,
+     isInventoryComplete,
+   ].filter(Boolean).length;
+ 
+   const progressPercent = (completedCount / totalSteps) * 100;
+ 
+   // Initialize inventory when room types change
+   const syncInventoryWithRoomTypes = () => {
+     const newInventory = roomTypes.map(rt => {
+       const existing = roomInventory.find(inv => inv.roomTypeId === rt.id);
+       return existing || {
+         roomTypeId: rt.id,
+         totalRooms: 10,
+         basePrice: rt.plans[0]?.discountedPrice || 5000,
+         overbookingAllowed: false,
+         overbookingLimit: 1,
+       };
+     });
+     setRoomInventory(newInventory);
+   };
+ 
+   const updateInventory = (roomTypeId: string, updates: Partial<RoomInventorySetup>) => {
+     setRoomInventory(prev => 
+       prev.map(inv => inv.roomTypeId === roomTypeId ? { ...inv, ...updates } : inv)
+     );
+   };
+ 
   const handleSubmit = () => {
     if (!hotelName || !category || !location.city) {
       toast({
@@ -75,6 +137,15 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
       return;
     }
 
+     if (roomInventory.length === 0 || !roomInventory.every(inv => inv.totalRooms > 0)) {
+       toast({
+         title: "Validation Error",
+         description: "Please configure inventory for all room types.",
+         variant: "destructive",
+       });
+       return;
+     }
+ 
     const hotel: Hotel = {
       id: Date.now().toString(),
       name: hotelName,
@@ -102,11 +173,16 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
     { id: "location", label: "Location", icon: MapPin },
     { id: "amenities", label: "Amenities", icon: CheckCircle2 },
     { id: "rooms", label: "Room Types", icon: Bed },
+     { id: "inventory", label: "Inventory", icon: Package },
   ];
 
   const nextTab = () => {
     const currentIndex = tabs.findIndex((t) => t.id === activeTab);
     if (currentIndex < tabs.length - 1) {
+       // Sync inventory when moving to inventory tab
+       if (tabs[currentIndex + 1].id === "inventory") {
+         syncInventoryWithRoomTypes();
+       }
       setActiveTab(tabs[currentIndex + 1].id);
     }
   };
@@ -118,10 +194,46 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
           <h1 className="text-2xl font-bold text-foreground">Hotel Onboarding</h1>
           <p className="text-muted-foreground">Add your hotel details to get started</p>
         </div>
+         <div className="flex items-center gap-4">
+           <div className="text-right">
+             <div className="text-sm text-muted-foreground">Progress</div>
+             <div className="text-lg font-bold">{completedCount}/{totalSteps} steps</div>
+           </div>
+           <div className="w-32">
+             <Progress value={progressPercent} className="h-2" />
+           </div>
+         </div>
       </div>
 
+       {/* Step Indicators */}
+       <div className="flex items-center gap-2 flex-wrap">
+         {tabs.map((tab, index) => {
+           const isComplete = index === 0 ? isBasicComplete :
+             index === 1 ? hotelImages.length > 0 :
+             index === 2 ? isLocationComplete :
+             index === 3 ? Object.values(amenities).some(arr => arr.length > 0) :
+             index === 4 ? isRoomsComplete :
+             isInventoryComplete;
+           
+           return (
+             <Badge
+               key={tab.id}
+               variant={isComplete ? "default" : "outline"}
+               className={`cursor-pointer transition-all ${activeTab === tab.id ? "ring-2 ring-primary ring-offset-2" : ""}`}
+               onClick={() => {
+                 if (tab.id === "inventory") syncInventoryWithRoomTypes();
+                 setActiveTab(tab.id);
+               }}
+             >
+               {isComplete ? <Check className="h-3 w-3 mr-1" /> : <span className="mr-1">{index + 1}.</span>}
+               {tab.label}
+             </Badge>
+           );
+         })}
+       </div>
+ 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid grid-cols-5 w-full">
+         <TabsList className="grid grid-cols-6 w-full">
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id} className="flex items-center gap-2">
               <tab.icon className="h-4 w-4" />
@@ -133,7 +245,10 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
         <TabsContent value="basic" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Basic Information</CardTitle>
+               <CardTitle className="flex items-center gap-2">
+                 Basic Information
+                 {isBasicComplete && <Badge variant="secondary" className="text-green-600"><Check className="h-3 w-3 mr-1" />Complete</Badge>}
+               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -280,18 +395,132 @@ export const HotelOnboarding = ({ onHotelCreated }: HotelOnboardingProps) => {
         <TabsContent value="rooms" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Room Types & Pricing</CardTitle>
+               <CardTitle className="flex items-center justify-between">
+                 <span className="flex items-center gap-2">
+                   Room Types & Pricing
+                   {isRoomsComplete && <Badge variant="secondary" className="text-green-600"><Check className="h-3 w-3 mr-1" />Complete</Badge>}
+                 </span>
+                 {!isRoomsComplete && (
+                   <Badge variant="outline" className="text-orange-600">
+                     <AlertCircle className="h-3 w-3 mr-1" />
+                     At least 1 room type required
+                   </Badge>
+                 )}
+               </CardTitle>
             </CardHeader>
             <CardContent>
               <RoomTypeForm roomTypes={roomTypes} onRoomTypesChange={setRoomTypes} />
               <div className="flex justify-end mt-6">
-                <Button onClick={handleSubmit} size="lg">
-                  <CheckCircle2 className="h-4 w-4 mr-2" /> Create Hotel
+                 <Button onClick={nextTab} disabled={!isRoomsComplete}>
+                   Next <ChevronRight className="h-4 w-4 ml-1" />
                 </Button>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
+ 
+         <TabsContent value="inventory" className="mt-6">
+           <Card>
+             <CardHeader>
+               <CardTitle className="flex items-center justify-between">
+                 <span className="flex items-center gap-2">
+                   <Package className="h-5 w-5 text-primary" />
+                   Room Inventory Setup
+                   {isInventoryComplete && <Badge variant="secondary" className="text-green-600"><Check className="h-3 w-3 mr-1" />Complete</Badge>}
+                 </span>
+               </CardTitle>
+             </CardHeader>
+             <CardContent>
+               {roomInventory.length === 0 ? (
+                 <div className="text-center py-8 text-muted-foreground">
+                   <AlertCircle className="h-12 w-12 mx-auto mb-4 text-orange-500" />
+                   <p>No room types configured. Please add room types first.</p>
+                   <Button variant="link" onClick={() => setActiveTab("rooms")}>
+                     Go to Room Types
+                   </Button>
+                 </div>
+               ) : (
+                 <div className="space-y-6">
+                   {roomInventory.map(inv => {
+                     const roomType = roomTypes.find(rt => rt.id === inv.roomTypeId);
+                     if (!roomType) return null;
+ 
+                     return (
+                       <Card key={inv.roomTypeId}>
+                         <CardContent className="pt-6">
+                           <div className="flex items-start justify-between mb-4">
+                             <div>
+                               <h3 className="font-semibold">{roomType.name}</h3>
+                               <p className="text-sm text-muted-foreground">
+                                 {roomType.bedCount} {roomType.bedType} • {roomType.size}
+                               </p>
+                             </div>
+                             <Badge variant="secondary">{inv.totalRooms} rooms</Badge>
+                           </div>
+ 
+                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div>
+                               <Label>Total Rooms</Label>
+                               <Input
+                                 type="number"
+                                 min="1"
+                                 value={inv.totalRooms}
+                                 onChange={(e) => updateInventory(inv.roomTypeId, { totalRooms: parseInt(e.target.value) || 1 })}
+                                 className="mt-1"
+                               />
+                             </div>
+                             <div>
+                               <Label>Base Price (₹)</Label>
+                               <Input
+                                 type="number"
+                                 min="0"
+                                 value={inv.basePrice}
+                                 onChange={(e) => updateInventory(inv.roomTypeId, { basePrice: parseInt(e.target.value) || 0 })}
+                                 className="mt-1"
+                               />
+                             </div>
+                             <div>
+                               <Label>Overbooking Limit</Label>
+                               <Input
+                                 type="number"
+                                 min="0"
+                                 value={inv.overbookingLimit}
+                                 onChange={(e) => updateInventory(inv.roomTypeId, { overbookingLimit: parseInt(e.target.value) || 0 })}
+                                 className="mt-1"
+                                 disabled={!inv.overbookingAllowed}
+                               />
+                             </div>
+                           </div>
+ 
+                           <Separator className="my-4" />
+ 
+                           <div className="flex items-center justify-between">
+                             <div>
+                               <Label>Allow Overbooking</Label>
+                               <p className="text-xs text-muted-foreground">
+                                 Accept bookings beyond available inventory
+                               </p>
+                             </div>
+                             <Switch
+                               checked={inv.overbookingAllowed}
+                               onCheckedChange={(checked) => updateInventory(inv.roomTypeId, { overbookingAllowed: checked })}
+                             />
+                           </div>
+                         </CardContent>
+                       </Card>
+                     );
+                   })}
+ 
+                   <div className="flex justify-end">
+                     <Button onClick={handleSubmit} size="lg" disabled={!isInventoryComplete}>
+                       <CheckCircle2 className="h-4 w-4 mr-2" /> Create Hotel
+                     </Button>
+                   </div>
+                 </div>
+               )}
+             </CardContent>
+           </Card>
+         </TabsContent>
       </Tabs>
     </div>
   );
