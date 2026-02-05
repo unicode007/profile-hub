@@ -15,6 +15,8 @@ import { HousekeepingManager } from "./HousekeepingManager";
 import { BookingPopupList } from "./BookingPopupList";
 import { RevenueAnalytics } from "./RevenueAnalytics";
 import { StaffManager } from "./StaffManager";
+ import { RoomInventoryMaster } from "./RoomInventoryMaster";
+ import { OverbookingManager } from "./OverbookingManager";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +51,7 @@ import {
   BarChart3,
   Users,
 } from "lucide-react";
+import { Package, AlertTriangle } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
 interface AvailabilityViewProps {
@@ -103,7 +106,7 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff">("room");
+   const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking">("room");
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
@@ -426,6 +429,14 @@ export const AvailabilityView = ({
             <Users className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Staff</span>
           </TabsTrigger>
+           <TabsTrigger value="inventory" className="gap-1.5 text-xs">
+             <Package className="h-3.5 w-3.5" />
+             <span className="hidden sm:inline">Inventory</span>
+           </TabsTrigger>
+           <TabsTrigger value="overbooking" className="gap-1.5 text-xs">
+             <AlertTriangle className="h-3.5 w-3.5" />
+             <span className="hidden sm:inline">Overbooking</span>
+           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -574,6 +585,23 @@ export const AvailabilityView = ({
             }}
           />
         </TabsContent>
+
+         <TabsContent value="inventory" className="mt-6">
+           {selectedHotel && (
+             <RoomInventoryMaster
+               hotel={selectedHotel}
+               bookings={bookings}
+             />
+           )}
+         </TabsContent>
+
+         <TabsContent value="overbooking" className="mt-6">
+           <OverbookingManager
+             hotels={hotels}
+             bookings={bookings}
+             onCancelBooking={onCancelBooking}
+           />
+         </TabsContent>
       </Tabs>
 
       {/* Tips Section */}
