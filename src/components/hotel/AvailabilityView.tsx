@@ -15,8 +15,11 @@ import { HousekeepingManager } from "./HousekeepingManager";
 import { BookingPopupList } from "./BookingPopupList";
 import { RevenueAnalytics } from "./RevenueAnalytics";
 import { StaffManager } from "./StaffManager";
- import { RoomInventoryMaster } from "./RoomInventoryMaster";
- import { OverbookingManager } from "./OverbookingManager";
+import { RoomInventoryMaster } from "./RoomInventoryMaster";
+import { OverbookingManager } from "./OverbookingManager";
+import { MaintenanceManager, MaintenanceStaff } from "./MaintenanceManager";
+import { MinibarManager } from "./MinibarManager";
+import { StaffLoginPortal, DemoStaffUser } from "./StaffLoginPortal";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,6 +53,9 @@ import {
   LayoutList,
   BarChart3,
   Users,
+  Wrench,
+  Wine,
+  LogIn,
 } from "lucide-react";
 import { Package, AlertTriangle } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
@@ -106,7 +112,9 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-   const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal">("room");
+  const [loggedInStaff, setLoggedInStaff] = useState<DemoStaffUser | null>(null);
+  const [maintenanceUser, setMaintenanceUser] = useState<MaintenanceStaff | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isQuickBookingOpen, setIsQuickBookingOpen] = useState(false);
@@ -429,14 +437,26 @@ export const AvailabilityView = ({
             <Users className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Staff</span>
           </TabsTrigger>
-           <TabsTrigger value="inventory" className="gap-1.5 text-xs">
-             <Package className="h-3.5 w-3.5" />
-             <span className="hidden sm:inline">Inventory</span>
-           </TabsTrigger>
-           <TabsTrigger value="overbooking" className="gap-1.5 text-xs">
-             <AlertTriangle className="h-3.5 w-3.5" />
-             <span className="hidden sm:inline">Overbooking</span>
-           </TabsTrigger>
+          <TabsTrigger value="inventory" className="gap-1.5 text-xs">
+            <Package className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Inventory</span>
+          </TabsTrigger>
+          <TabsTrigger value="overbooking" className="gap-1.5 text-xs">
+            <AlertTriangle className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Overbooking</span>
+          </TabsTrigger>
+          <TabsTrigger value="maintenance" className="gap-1.5 text-xs">
+            <Wrench className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Maintenance</span>
+          </TabsTrigger>
+          <TabsTrigger value="minibar" className="gap-1.5 text-xs">
+            <Wine className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Minibar</span>
+          </TabsTrigger>
+          <TabsTrigger value="staffportal" className="gap-1.5 text-xs">
+            <LogIn className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Staff Portal</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -602,18 +622,64 @@ export const AvailabilityView = ({
              onCancelBooking={onCancelBooking}
            />
          </TabsContent>
+        <TabsContent value="maintenance" className="mt-6">
+          <MaintenanceManager
+            hotels={hotels}
+            physicalRooms={physicalRooms}
+            currentUser={maintenanceUser}
+            onStaffLogin={(staff) => {
+              setMaintenanceUser(staff);
+              toast.success(`Logged in as ${staff.name} (${staff.role})`);
+            }}
+            onUpdateRoomStatus={(roomId, status) => {
+              setPhysicalRooms((prev) =>
+                prev.map((r) =>
+                  r.id === roomId ? { ...r, status } : r
+                )
+              );
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="minibar" className="mt-6">
+          <MinibarManager
+            hotels={hotels}
+            physicalRooms={physicalRooms}
+            bookings={bookings}
+            onAddChargeToFolio={(bookingId, amount, description) => {
+              toast.success(`₹${amount} added to folio for ${description}`);
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="staffportal" className="mt-6">
+          <StaffLoginPortal
+            currentUser={loggedInStaff}
+            onLogin={(user) => {
+              setLoggedInStaff(user);
+              toast.success(`Welcome, ${user.name}!`);
+            }}
+            onLogout={() => {
+              setLoggedInStaff(null);
+              toast.success("Logged out successfully");
+            }}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Tips Section */}
       <div className="text-sm text-muted-foreground bg-muted/50 p-4 rounded-lg">
         <p className="font-medium mb-2">💡 Calendar Tips:</p>
-        <ul className="list-disc list-inside space-y-1 grid md:grid-cols-2 gap-1">
+        <ul className="list-disc list-inside space-y-1 grid md:grid-cols-2 lg:grid-cols-3 gap-1">
           <li><strong>Room Grid:</strong> Room type availability with drag to reschedule</li>
           <li><strong>Room No.:</strong> Physical room-wise grid (like the screenshot)</li>
           <li><strong>Date View:</strong> Daily availability with color-coded status</li>
           <li><strong>Kanban:</strong> Drag bookings between status columns</li>
           <li><strong>Rooms:</strong> Manage physical rooms, assign at check-in</li>
           <li><strong>Types:</strong> Manage room inventory, block rooms</li>
+          <li><strong>Maintenance:</strong> Track repairs with supervisor/staff workflow</li>
+          <li><strong>Minibar:</strong> Room minibar inventory and charges</li>
+          <li><strong>Staff Portal:</strong> Demo login for different staff roles</li>
         </ul>
       </div>
 
