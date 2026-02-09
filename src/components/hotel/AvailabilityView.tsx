@@ -20,6 +20,7 @@ import { OverbookingManager } from "./OverbookingManager";
 import { MaintenanceManager, MaintenanceStaff } from "./MaintenanceManager";
 import { MinibarManager } from "./MinibarManager";
 import { StaffLoginPortal, DemoStaffUser } from "./StaffLoginPortal";
+import { RestaurantPOS } from "./RestaurantPOS";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,6 +57,7 @@ import {
   Wrench,
   Wine,
   LogIn,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Package, AlertTriangle } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
@@ -112,7 +114,7 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant">("room");
   const [loggedInStaff, setLoggedInStaff] = useState<DemoStaffUser | null>(null);
   const [maintenanceUser, setMaintenanceUser] = useState<MaintenanceStaff | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -457,6 +459,10 @@ export const AvailabilityView = ({
             <LogIn className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Staff Portal</span>
           </TabsTrigger>
+          <TabsTrigger value="restaurant" className="gap-1.5 text-xs">
+            <UtensilsCrossed className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Restaurant</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -665,6 +671,15 @@ export const AvailabilityView = ({
             }}
           />
         </TabsContent>
+
+        <TabsContent value="restaurant" className="mt-6">
+          <RestaurantPOS
+            bookings={bookings}
+            onAddChargeToFolio={(bookingId, amount, description) => {
+              toast.success(`₹${amount} added to guest folio for ${description}`);
+            }}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Tips Section */}
@@ -680,6 +695,7 @@ export const AvailabilityView = ({
           <li><strong>Maintenance:</strong> Track repairs with supervisor/staff workflow</li>
           <li><strong>Minibar:</strong> Room minibar inventory and charges</li>
           <li><strong>Staff Portal:</strong> Demo login for different staff roles</li>
+          <li><strong>Restaurant:</strong> Full POS with menu, orders, KOT, and billing</li>
         </ul>
       </div>
 
