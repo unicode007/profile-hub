@@ -1,8 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 /* Clean Admin Profile UI Design System */
 
@@ -102,5 +102,36 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer utilities {
+  @keyframes float-slow {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-18px);
+    }
+  }
+
+  @keyframes glow-pulse {
+    0%,
+    100% {
+      text-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+      transform: scale(1);
+    }
+    50% {
+      text-shadow: 0 0 26px rgba(56, 189, 248, 0.55);
+      transform: scale(1.02);
+    }
+  }
+  .float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+
+  .glow-pulse {
+    animation: glow-pulse 2.8s ease-in-out infinite;
   }
 }
