@@ -1,100 +1,201 @@
 import { useMemo, useState } from "react";
-import { format } from "date-fns";
+import { format, isValid, parse } from "date-fns";
+import { CalendarIcon } from "lucide-react";
 import { z } from "zod";
 import { DateRange } from "react-day-picker";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  ControlledDatePicker,
-  ControlledPickerValue,
-  PickerSize,
-} from "@/components/datepicker/ControlledDatePicker";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const zodSchema = z.object({
-  startDate: z.date({ required_error: "Start date is required" }),
-  dateTime: z.string().min(1, "Date time is required"),
+const dateTimeSchema = z.object({
+  startDate: z.date({ required_error: "Start date is required." }),
+  dob: z
+    .date({ required_error: "Date of birth is required." })
+    .max(new Date(), "Date of birth must be in the past."),
   stay: z.object({
-    from: z.date({ required_error: "From date required" }),
-    to: z.date({ required_error: "To date required" }),
+    from: z.date({ required_error: "Range start is required." }),
+    to: z.date({ required_error: "Range end is required." }),
   }),
 });
 
-interface FormikLikeMeta {
-  touched?: boolean;
+type PickerSize = "sm" | "md" | "lg";
+
+interface PickerButtonProps {
+  value?: Date;
+  placeholder: string;
+  size: PickerSize;
   error?: string;
 }
 
-interface FormikLikeFieldProps {
-  name: string;
-  value: ControlledPickerValue;
-  meta: FormikLikeMeta;
-  setFieldValue: (name: string, value: ControlledPickerValue) => void;
+const pickerSizeClass: Record<PickerSize, string> = {
+  sm: "h-8 text-xs",
+  md: "h-10 text-sm",
+  lg: "h-12 text-base",
+};
+
+function DatePickerButton({ value, placeholder, size, error }: PickerButtonProps) {
+  return (
+    <Button
+      variant="outline"
+      className={cn(
+        "w-full justify-start text-left font-normal",
+        !value && "text-muted-foreground",
+        pickerSizeClass[size],
+        error && "border-destructive",
+      )}
+    >
+      <CalendarIcon className="mr-2 h-4 w-4" />
+      {value ? format(value, "PPP") : placeholder}
+    </Button>
+  );
 }
 
-function FormikLikeDateField({ name, value, meta, setFieldValue }: FormikLikeFieldProps) {
+function parseNaturalDate(input: string) {
+  const normalized = input.trim().toLowerCase();
+
+  if (!normalized) return undefined;
+
+  if (normalized === "today") return new Date();
+  if (normalized === "tomorrow") {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow;
+  }
+  if (normalized === "next week") {
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    return nextWeek;
+  }
+
+  const parsed = parse(input, "MMMM d, yyyy", new Date());
+  if (isValid(parsed)) return parsed;
+
+  const isoParsed = new Date(input);
+  return isValid(isoParsed) ? isoParsed : undefined;
+}
+
+function FormikFriendlyDateField({
+  fieldName,
+  value,
+  touched,
+  error,
+  onChange,
+}: {
+  fieldName: string;
+  value?: Date;
+  touched?: boolean;
+  error?: string;
+  onChange: (name: string, next: Date | undefined) => void;
+}) {
   return (
-    <ControlledDatePicker
-      mode="single"
-      label={name}
-      value={value}
-      touched={meta.touched}
-      error={meta.error}
-      onChange={(next) => setFieldValue(name, next)}
-    />
+    <div className="space-y-2">
+      <Label>{fieldName}</Label>
+      <Popover>
+        <PopoverTrigger asChild>
+          <DatePickerButton
+            value={value}
+            placeholder="Select date"
+            size="md"
+            error={touched ? error : undefined}
+          />
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar mode="single" selected={value} onSelect={(date) => onChange(fieldName, date)} initialFocus />
+        </PopoverContent>
+      </Popover>
+      {touched && error ? <p className="text-sm text-destructive">{error}</p> : null}
+    </div>
   );
 }
 
 export function DatePickerShowcase() {
-  const [size] = useState<PickerSize>("md");
+  const [size, setSize] = useState<PickerSize>("md");
+  const [formatPattern, setFormatPattern] = useState("PPP");
 
-  const [singleDate, setSingleDate] = useState<Date>();
-  const [rangeDate, setRangeDate] = useState<DateRange>();
-  const [splitDateTime, setSplitDateTime] = useState<Date>();
+  const [basicDate, setBasicDate] = useState<Date>();
+  const [naturalInput, setNaturalInput] = useState("");
+  const [naturalDate, setNaturalDate] = useState<Date>();
+  const [naturalError, setNaturalError] = useState<string>();
+
+  const [time, setTime] = useState("09:00");
+  const [dateTimeDate, setDateTimeDate] = useState<Date>();
   const [singleUnitDateTime, setSingleUnitDateTime] = useState("");
-  const [timeOnly, setTimeOnly] = useState("10:00");
-  const [inputDate, setInputDate] = useState<Date>();
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dob, setDob] = useState<Date>();
+  const [travelRange, setTravelRange] = useState<DateRange>();
+  const [textDateInput, setTextDateInput] = useState("");
+  const [textInputDate, setTextInputDate] = useState<Date>();
+
+  const [normalErrors, setNormalErrors] = useState<Record<string, string>>({});
   const [zodErrors, setZodErrors] = useState<string[]>([]);
 
-  const [formikValues, setFormikValues] = useState<{ checkIn?: Date; checkOut?: Date }>({});
-  const [formikTouched, setFormikTouched] = useState<{ checkIn?: boolean; checkOut?: boolean }>({});
+  const [formikLikeValues, setFormikLikeValues] = useState<{ checkIn?: Date; checkOut?: Date }>({});
+  const [formikLikeTouched, setFormikLikeTouched] = useState<{ checkIn?: boolean; checkOut?: boolean }>({});
 
-  const formikErrors = useMemo(
+  const disabledDay = useMemo(() => new Date(2026, 6, 15), []);
+  const disabledBetween = useMemo(
     () => ({
-      checkIn: !formikValues.checkIn ? "Check in is required" : undefined,
-      checkOut:
-        !formikValues.checkOut
-          ? "Check out is required"
-          : formikValues.checkIn && formikValues.checkOut < formikValues.checkIn
-            ? "Check out cannot be before check in"
-            : undefined,
+      from: new Date(2026, 6, 20),
+      to: new Date(2026, 6, 25),
     }),
-    [formikValues],
-  );
-
-  const disabledDates = useMemo(
-    () => [new Date(2026, 6, 15), { from: new Date(2026, 6, 20), to: new Date(2026, 6, 25) }],
     [],
   );
 
+  const formattedDate = basicDate ? format(basicDate, formatPattern) : "No date selected";
+
+  const formikLikeErrors = useMemo(() => {
+    return {
+      checkIn: !formikLikeValues.checkIn ? "Check-in is required." : undefined,
+      checkOut:
+        !formikLikeValues.checkOut
+          ? "Check-out is required."
+          : formikLikeValues.checkIn && formikLikeValues.checkOut < formikLikeValues.checkIn
+            ? "Check-out cannot be before check-in."
+            : undefined,
+    };
+  }, [formikLikeValues]);
+
+  const handleNaturalParse = () => {
+    const parsed = parseNaturalDate(naturalInput);
+    if (!parsed) {
+      setNaturalError("Unable to parse date. Try: today, tomorrow, next week, or March 1, 2026.");
+      return;
+    }
+
+    setNaturalDate(parsed);
+    setNaturalError(undefined);
+  };
+
+  const handleTextInputDate = (value: string) => {
+    setTextDateInput(value);
+    const parsed = parse(value, "dd/MM/yyyy", new Date());
+    if (isValid(parsed)) setTextInputDate(parsed);
+  };
+
   const runNormalValidation = () => {
-    const nextErrors: Record<string, string> = {};
+    const errors: Record<string, string> = {};
 
-    if (!singleDate) nextErrors.singleDate = "Please select date";
-    if (!rangeDate?.from || !rangeDate.to) nextErrors.rangeDate = "Please select range";
-    if (!singleUnitDateTime) nextErrors.singleUnitDateTime = "Please select single-unit datetime";
+    if (!basicDate) errors.basicDate = "Please pick a date.";
+    if (!dob) errors.dob = "Date of birth is required.";
+    else if (dob >= new Date()) errors.dob = "Date of birth must be earlier than today.";
+    if (!travelRange?.from || !travelRange?.to) errors.travelRange = "Please pick start and end dates.";
+    if (!singleUnitDateTime) errors.singleUnitDateTime = "Please select a datetime in single unit picker.";
 
-    setErrors(nextErrors);
+    setNormalErrors(errors);
   };
 
   const runZodValidation = () => {
-    const result = zodSchema.safeParse({
-      startDate: singleDate,
-      dateTime: singleUnitDateTime,
-      stay: rangeDate,
+    const result = dateTimeSchema.safeParse({
+      startDate: basicDate,
+      dob,
+      stay: travelRange,
     });
 
     if (result.success) {
@@ -102,164 +203,313 @@ export function DatePickerShowcase() {
       return;
     }
 
-    setZodErrors(result.error.errors.map((error) => `${error.path.join(".")}: ${error.message}`));
+    setZodErrors(result.error.errors.map((issue) => `${issue.path.join(".")}: ${issue.message}`));
   };
 
   return (
     <section className="mx-auto w-full max-w-6xl space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold md:text-3xl">Reusable DatePicker Components</h1>
-        <p className="text-sm text-muted-foreground">
-          Import `ControlledDatePicker` and choose mode: single, range, date-time, datetime-local, time, or input.
+      <div className="space-y-2">
+        <h1 className="text-2xl font-semibold md:text-3xl">Shadcn DatePicker Playground (Controlled)</h1>
+        <p className="text-sm text-muted-foreground md:text-base">
+          Includes basic picker, natural language parsing, date-time, DOB, range, input picker, time picker,
+          disabled dates, custom formats, responsive sizes, normal validation, Zod validation, and Formik-friendly
+          integration.
         </p>
       </div>
 
-      <Tabs defaultValue="components" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3">
-          <TabsTrigger value="components">Components</TabsTrigger>
-          <TabsTrigger value="formik">Formik Friendly</TabsTrigger>
-          <TabsTrigger value="zod">Zod Validation</TabsTrigger>
+      <Card>
+        <CardHeader>
+          <CardTitle>Global settings</CardTitle>
+          <CardDescription>Change component size and output format.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Size type</Label>
+            <Select value={size} onValueChange={(value: PickerSize) => setSize(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sm">Small</SelectItem>
+                <SelectItem value="md">Medium</SelectItem>
+                <SelectItem value="lg">Large</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Date format</Label>
+            <Select value={formatPattern} onValueChange={setFormatPattern}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PPP">PPP (Jan 1st, 2026)</SelectItem>
+                <SelectItem value="dd/MM/yyyy">dd/MM/yyyy</SelectItem>
+                <SelectItem value="yyyy-MM-dd">yyyy-MM-dd</SelectItem>
+                <SelectItem value="EEEE, MMM d">Weekday short</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Tabs defaultValue="pickers" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+          <TabsTrigger value="pickers">Core Pickers</TabsTrigger>
+          <TabsTrigger value="validation">Validation</TabsTrigger>
+          <TabsTrigger value="formik-friendly">Formik Friendly</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="components">
+        <TabsContent value="pickers" className="space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle>Basic + disabled rules</CardTitle>
-                <CardDescription>Single date with exact date and range disabled.</CardDescription>
+                <CardTitle>Basic Picker + Disabled Rules</CardTitle>
+                <CardDescription>
+                  Disabled exact date {format(disabledDay, "PPP")} and blocked range {format(disabledBetween.from, "PPP")}
+                  -{format(disabledBetween.to, "PPP")}.
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <ControlledDatePicker
-                  mode="single"
-                  label="Booking date"
-                  value={singleDate}
-                  onChange={(next) => setSingleDate(next as Date | undefined)}
-                  error={errors.singleDate}
-                  touched
-                  size={size}
-                  disabledDates={disabledDates}
-                />
+              <CardContent className="space-y-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <DatePickerButton
+                      value={basicDate}
+                      placeholder="Pick a date"
+                      size={size}
+                      error={normalErrors.basicDate}
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={basicDate}
+                      onSelect={setBasicDate}
+                      disabled={[disabledDay, disabledBetween]}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+                <p className="text-sm text-muted-foreground">Formatted value: {formattedDate}</p>
+                {normalErrors.basicDate ? <p className="text-sm text-destructive">{normalErrors.basicDate}</p> : null}
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>DateTime (split + single unit)</CardTitle>
+                <CardTitle>Natural Language Picker</CardTitle>
+                <CardDescription>Examples: today, tomorrow, next week, March 8, 2026.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <ControlledDatePicker
-                  mode="date-time"
-                  label="Split DateTime picker"
-                  value={splitDateTime}
-                  onChange={(next) => setSplitDateTime(next as Date | undefined)}
-                  size={size}
-                />
-                <ControlledDatePicker
-                  mode="datetime-local"
-                  label="Single unit DateTime picker"
-                  value={singleUnitDateTime}
-                  onChange={(next) => setSingleUnitDateTime((next as string) || "")}
-                  touched
-                  error={errors.singleUnitDateTime}
-                  size={size}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Split value: {splitDateTime ? format(splitDateTime, "PPP p") : "not selected"}
+              <CardContent className="space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    value={naturalInput}
+                    onChange={(event) => setNaturalInput(event.target.value)}
+                    placeholder="Type natural date"
+                  />
+                  <Button onClick={handleNaturalParse} type="button">
+                    Parse
+                  </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Result: {naturalDate ? format(naturalDate, "PPP") : "No parsed date yet"}
                 </p>
+                {naturalError ? <p className="text-sm text-destructive">{naturalError}</p> : null}
+              </CardContent>
+            </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>DateTime Picker</CardTitle>
+                  <CardDescription>
+                    Includes split picker (date + time) and single-unit datetime picker (`datetime-local`).
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <DatePickerButton value={dateTimeDate} placeholder="Pick date" size={size} />
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar mode="single" selected={dateTimeDate} onSelect={setDateTimeDate} initialFocus />
+                  </PopoverContent>
+                </Popover>
+                <div className="space-y-2">
+                  <Label>Time picker</Label>
+                  <Input type="time" value={time} onChange={(event) => setTime(event.target.value)} className={pickerSizeClass[size]} />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Value: {dateTimeDate ? `${format(dateTimeDate, "PPP")} ${time}` : `No datetime selected (${time})`}
+                </p>
+
+                <div className="space-y-2">
+                  <Label>DateTime picker (single unit)</Label>
+                  <Input
+                    type="datetime-local"
+                    value={singleUnitDateTime}
+                    min="2026-01-01T00:00"
+                    max="2028-12-31T23:59"
+                    onChange={(event) => setSingleUnitDateTime(event.target.value)}
+                    className={cn(pickerSizeClass[size], normalErrors.singleUnitDateTime && "border-destructive")}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Value: {singleUnitDateTime || "No datetime selected in single unit picker"}
+                  </p>
+                  {normalErrors.singleUnitDateTime ? (
+                    <p className="text-sm text-destructive">{normalErrors.singleUnitDateTime}</p>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader>
-                <CardTitle>Range + input + time</CardTitle>
+                <CardTitle>Date of Birth + Range + Input Picker</CardTitle>
+                <CardDescription>Includes age-safe DOB picker, range selection, and direct input parsing.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ControlledDatePicker
-                  mode="range"
-                  label="Stay range"
-                  value={rangeDate}
-                  onChange={(next) => setRangeDate(next as DateRange | undefined)}
-                  touched
-                  error={errors.rangeDate}
-                  size={size}
-                />
-                <ControlledDatePicker
-                  mode="input"
-                  label="Input picker"
-                  value={inputDate}
-                  onChange={(next) => setInputDate(next as Date | undefined)}
-                  inputFormat="dd/MM/yyyy"
-                  size={size}
-                />
-                <ControlledDatePicker
-                  mode="time"
-                  label="Time picker"
-                  value={timeOnly}
-                  onChange={(next) => setTimeOnly((next as string) || "")}
-                  size={size}
-                />
-              </CardContent>
-            </Card>
+                <div className="space-y-2">
+                  <Label>Date of birth</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <DatePickerButton value={dob} placeholder="Select DOB" size={size} error={normalErrors.dob} />
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dob}
+                        onSelect={setDob}
+                        toDate={new Date()}
+                        captionLayout="dropdown-buttons"
+                        fromYear={1940}
+                        toYear={new Date().getFullYear()}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {normalErrors.dob ? <p className="text-sm text-destructive">{normalErrors.dob}</p> : null}
+                </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Normal validation</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={runNormalValidation}>Run normal validation</Button>
+                <div className="space-y-2">
+                  <Label>Range picker</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-full justify-start text-left font-normal",
+                          pickerSizeClass[size],
+                          !travelRange?.from && "text-muted-foreground",
+                          normalErrors.travelRange && "border-destructive",
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {travelRange?.from
+                          ? travelRange.to
+                            ? `${format(travelRange.from, "PPP")} - ${format(travelRange.to, "PPP")}`
+                            : format(travelRange.from, "PPP")
+                          : "Select date range"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar mode="range" selected={travelRange} onSelect={setTravelRange} numberOfMonths={2} />
+                    </PopoverContent>
+                  </Popover>
+                  {normalErrors.travelRange ? <p className="text-sm text-destructive">{normalErrors.travelRange}</p> : null}
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Input picker (dd/MM/yyyy)</Label>
+                  <Input
+                    placeholder="31/12/2026"
+                    value={textDateInput}
+                    onChange={(event) => handleTextInputDate(event.target.value)}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Parsed: {textInputDate ? format(textInputDate, "PPP") : "Waiting for valid input"}
+                  </p>
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
 
-        <TabsContent value="formik">
+        <TabsContent value="validation" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Formik usage pattern</CardTitle>
-              <CardDescription>Use this same API with real Formik `setFieldValue` and `meta`.</CardDescription>
+              <CardTitle>Normal + Zod validation</CardTitle>
+              <CardDescription>Run either manual validation or schema validation.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <FormikLikeDateField
-                name="checkIn"
-                value={formikValues.checkIn}
-                meta={{ touched: formikTouched.checkIn, error: formikErrors.checkIn }}
-                setFieldValue={(name, value) => {
-                  setFormikValues((prev) => ({ ...prev, [name]: value as Date | undefined }));
-                  setFormikTouched((prev) => ({ ...prev, [name]: true }));
-                }}
-              />
-              <FormikLikeDateField
-                name="checkOut"
-                value={formikValues.checkOut}
-                meta={{ touched: formikTouched.checkOut, error: formikErrors.checkOut }}
-                setFieldValue={(name, value) => {
-                  setFormikValues((prev) => ({ ...prev, [name]: value as Date | undefined }));
-                  setFormikTouched((prev) => ({ ...prev, [name]: true }));
-                }}
-              />
+            <CardContent className="flex flex-wrap gap-2">
+              <Button type="button" onClick={runNormalValidation}>
+                Run normal validation
+              </Button>
+              <Button type="button" variant="secondary" onClick={runZodValidation}>
+                Run Zod validation
+              </Button>
             </CardContent>
           </Card>
-        </TabsContent>
 
-        <TabsContent value="zod">
           <Card>
             <CardHeader>
-              <CardTitle>Zod usage pattern</CardTitle>
-              <CardDescription>Validate controlled values with your own schema and map issues to UI errors.</CardDescription>
+              <CardTitle>Zod errors</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <Button variant="secondary" onClick={runZodValidation}>
-                Run zod validation
-              </Button>
+            <CardContent>
               {zodErrors.length ? (
-                <ul className="list-disc pl-5 text-sm text-destructive">
+                <ul className="list-disc space-y-1 pl-5 text-sm text-destructive">
                   {zodErrors.map((item) => (
                     <li key={item}>{item}</li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-sm text-muted-foreground">No schema issues</p>
+                <p className="text-sm text-muted-foreground">No schema issues.</p>
               )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="formik-friendly">
+          <Card>
+            <CardHeader>
+              <CardTitle>Formik-friendly controlled fields</CardTitle>
+              <CardDescription>
+                This field API mirrors Formik usage (`value`, `touched`, `error`, and `setFieldValue` style callback).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FormikFriendlyDateField
+                fieldName="checkIn"
+                value={formikLikeValues.checkIn}
+                touched={formikLikeTouched.checkIn}
+                error={formikLikeErrors.checkIn}
+                onChange={(name, next) => {
+                  setFormikLikeValues((prev) => ({ ...prev, [name]: next }));
+                  setFormikLikeTouched((prev) => ({ ...prev, [name]: true }));
+                }}
+              />
+
+              <FormikFriendlyDateField
+                fieldName="checkOut"
+                value={formikLikeValues.checkOut}
+                touched={formikLikeTouched.checkOut}
+                error={formikLikeErrors.checkOut}
+                onChange={(name, next) => {
+                  setFormikLikeValues((prev) => ({ ...prev, [name]: next }));
+                  setFormikLikeTouched((prev) => ({ ...prev, [name]: true }));
+                }}
+              />
+
+              <Button
+                type="button"
+                onClick={() =>
+                  setFormikLikeTouched({
+                    checkIn: true,
+                    checkOut: true,
+                  })
+                }
+              >
+                Validate Formik-like fields
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
