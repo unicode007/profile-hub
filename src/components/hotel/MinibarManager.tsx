@@ -184,12 +184,15 @@ export const MinibarManager = ({
   const [charges, setCharges] = useState<MinibarCharge[]>(() => generateDemoCharges(physicalRooms, bookings));
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [activeTab, setActiveTab] = useState<"rooms" | "inventory" | "charges" | "reports">("rooms");
+  const [activeTab, setActiveTab] = useState<"rooms" | "inventory" | "charges" | "reports" | "settings">("rooms");
   const [selectedRoom, setSelectedRoom] = useState<RoomMinibar | null>(null);
   const [isCheckDialogOpen, setIsCheckDialogOpen] = useState(false);
   const [isRestockDialogOpen, setIsRestockDialogOpen] = useState(false);
   const [consumptionUpdates, setConsumptionUpdates] = useState<Record<string, number>>({});
-
+  const [isBulkRestockOpen, setIsBulkRestockOpen] = useState(false);
+  const [autoRestockEnabled, setAutoRestockEnabled] = useState(true);
+  const [restockSchedule, setRestockSchedule] = useState<"daily" | "checkout" | "manual">("checkout");
+  const [alertThreshold, setAlertThreshold] = useState(2);
   const getStats = () => {
     return {
       totalRooms: roomMinibars.length,
