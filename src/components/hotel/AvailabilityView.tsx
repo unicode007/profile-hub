@@ -59,6 +59,7 @@ import {
   Wine,
   LogIn,
   UtensilsCrossed,
+  Monitor,
 } from "lucide-react";
 import { Package, AlertTriangle } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
