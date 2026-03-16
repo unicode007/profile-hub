@@ -797,14 +797,20 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
                   return (
                     <div
                       key={table.id}
-                      onClick={() => handleTableSelect(table)}
+                      onClick={() => {
+                        if (table.status === "cleaning") {
+                          handleMarkTableReady(table.id);
+                          return;
+                        }
+                        handleTableSelect(table);
+                      }}
                       className={`
                         relative p-4 rounded-xl border-2 cursor-pointer transition-all group
                         hover:shadow-lg hover:scale-105
                         ${table.status === "available" ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""}
                         ${table.status === "occupied" ? "border-red-500 bg-red-50 dark:bg-red-950/30" : ""}
                         ${table.status === "reserved" ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30" : ""}
-                        ${table.status === "cleaning" ? "border-muted-foreground bg-muted/50 cursor-not-allowed" : ""}
+                        ${table.status === "cleaning" ? "border-muted-foreground bg-muted/50" : ""}
                         ${table.shape === "round" ? "rounded-full aspect-square" : ""}
                       `}
                     >
@@ -830,7 +836,7 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
                               ₹{order.total.toLocaleString()}
                             </Badge>
                             {elapsedMinutes > 0 && (
-                              <div className={`text-[10px] flex items-center justify-center gap-0.5 ${elapsedMinutes > 60 ? "text-red-500" : "text-muted-foreground"}`}>
+                              <div className={`text-[10px] flex items-center justify-center gap-0.5 ${elapsedMinutes > 60 ? "text-destructive" : "text-muted-foreground"}`}>
                                 <Timer className="h-2.5 w-2.5" />
                                 {elapsedMinutes}m
                               </div>
@@ -842,6 +848,14 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
                           <div className="mt-2">
                             <Badge variant="outline" className="text-[10px] border-amber-500">
                               {reservation.time}
+                            </Badge>
+                          </div>
+                        )}
+
+                        {table.status === "cleaning" && (
+                          <div className="mt-2">
+                            <Badge variant="outline" className="text-[10px] border-primary text-primary">
+                              Click to Ready
                             </Badge>
                           </div>
                         )}
