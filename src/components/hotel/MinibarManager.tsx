@@ -341,6 +341,63 @@ export const MinibarManager = ({
     toast.success("Charges added to guest folio");
   };
 
+  const handleBulkRestock = () => {
+    const needsRestock = roomMinibars.filter((r) => r.status === "needs-restock");
+    setRoomMinibars(
+      roomMinibars.map((r) => {
+        if (r.status !== "needs-restock") return r;
+        return {
+          ...r,
+          items: r.items.map((item) => ({
+            ...item,
+            quantity: 3,
+            consumed: 0,
+          })),
+          status: "stocked" as const,
+          lastRestocked: new Date(),
+        };
+      })
+    );
+    toast.success(`${needsRestock.length} rooms restocked`);
+    setIsBulkRestockOpen(false);
+  };
+
+  const handleDispute = (chargeId: string) => {
+    setCharges(
+      charges.map((c) =>
+        c.id === chargeId ? { ...c, status: "disputed" as const } : c
+      )
+    );
+    toast.info("Charge marked as disputed - manager review required");
+  };
+
+  // Consumption analytics
+  const consumptionByCategory = useMemo(() => {
+    const categoryTotals: Record<string, { count: number; revenue: number }> = {};
+    charges.forEach((charge) => {
+      charge.items.forEach((item) => {
+        const minibarItem = items.find((i) => i.id === item.itemId);
+        const cat = minibarItem?.category || "other";
+        if (!categoryTotals[cat]) categoryTotals[cat] = { count: 0, revenue: 0 };
+        categoryTotals[cat].count += item.quantity;
+        categoryTotals[cat].revenue += item.total;
+      });
+    });
+    return categoryTotals;
+  }, [charges, items]);
+
+  const topSellingItems = useMemo(() => {
+    const itemTotals: Record<string, { name: string; count: number; revenue: number }> = {};
+    charges.forEach((charge) => {
+      charge.items.forEach((item) => {
+        if (!itemTotals[item.itemId]) itemTotals[item.itemId] = { name: item.itemName, count: 0, revenue: 0 };
+        itemTotals[item.itemId].count += item.quantity;
+        itemTotals[item.itemId].revenue += item.total;
+      });
+    });
+    return Object.values(itemTotals).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+  }, [charges]);
+
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
