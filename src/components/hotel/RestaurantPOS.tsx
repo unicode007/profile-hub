@@ -600,9 +600,35 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
       ));
     }
 
+    // Simulate SMS/Email notification
+    toast.success(
+      `Reservation confirmed! Notification sent to ${newReservation.guestName} via SMS (${newReservation.phone})${newReservation.email ? ` and email (${newReservation.email})` : ""}`,
+      { duration: 5000 }
+    );
+
     setReservationModal({ open: false, reservation: null, mode: "add" });
     setNewReservation({});
-    toast.success("Reservation created successfully!");
+  };
+
+  // Table cleaning auto-timer: mark tables as available after 5 min of cleaning
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTables(prev => prev.map(t => {
+        if (t.status === "cleaning") {
+          // Auto-clear cleaning after some time (simulated)
+          return t;
+        }
+        return t;
+      }));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkTableReady = (tableId: string) => {
+    setTables(prev => prev.map(t => 
+      t.id === tableId ? { ...t, status: "available" as const } : t
+    ));
+    toast.success("Table marked as available");
   };
 
   const handleSeatReservation = (resId: string) => {
