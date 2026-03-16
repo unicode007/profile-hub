@@ -1,10 +1,13 @@
-import { DatePickerShowcase } from "@/components/datepicker/DatePickerShowcase";
+import { HotelManager } from "@/components/hotel/HotelManager";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const Index = () => {
   return (
-    <main className="min-h-screen bg-muted/30 p-4 md:p-8">
-      <DatePickerShowcase />
-    </main>
+    <AuthProvider>
+      <main className="min-h-screen bg-muted/30">
+        <HotelManager />
+      </main>
+    </AuthProvider>
   );
 };
 

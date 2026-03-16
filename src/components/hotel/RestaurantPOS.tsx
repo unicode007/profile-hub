@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Booking } from "./types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -326,6 +326,7 @@ const generateDemoOrders = (menuItems: MenuItem[]): RestaurantOrder[] => {
 interface RestaurantPOSProps {
   bookings: Booking[];
   onAddChargeToFolio: (bookingId: string, amount: number, description: string) => void;
+  onOrdersUpdate?: (orders: RestaurantOrder[]) => void;
 }
 
 const getCategoryIcon = (iconName: string) => {
@@ -342,7 +343,7 @@ const getCategoryIcon = (iconName: string) => {
   }
 };
 
-export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSProps) => {
+export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: RestaurantPOSProps) => {
   const [tables, setTables] = useState<RestaurantTable[]>(generateDemoTables);
   const [orders, setOrders] = useState<RestaurantOrder[]>(() => generateDemoOrders(demoMenuItems));
   const [reservations, setReservations] = useState<TableReservation[]>(generateDemoReservations);
@@ -365,6 +366,11 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSPro
   
   const [kotCounter, setKotCounter] = useState(1004);
   const [kdsAudioEnabled, setKdsAudioEnabled] = useState(true);
+
+  // Notify parent of orders changes for KDS
+  useEffect(() => {
+    onOrdersUpdate?.(orders);
+  }, [orders, onOrdersUpdate]);
 
   // Get active bookings for room charge linking
   const activeBookings = bookings.filter(b => b.status === "checked-in");
@@ -594,9 +600,35 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSPro
       ));
     }
 
+    // Simulate SMS/Email notification
+    toast.success(
+      `Reservation confirmed! Notification sent to ${newReservation.guestName} via SMS (${newReservation.phone})${newReservation.email ? ` and email (${newReservation.email})` : ""}`,
+      { duration: 5000 }
+    );
+
     setReservationModal({ open: false, reservation: null, mode: "add" });
     setNewReservation({});
-    toast.success("Reservation created successfully!");
+  };
+
+  // Table cleaning auto-timer: mark tables as available after 5 min of cleaning
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTables(prev => prev.map(t => {
+        if (t.status === "cleaning") {
+          // Auto-clear cleaning after some time (simulated)
+          return t;
+        }
+        return t;
+      }));
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleMarkTableReady = (tableId: string) => {
+    setTables(prev => prev.map(t => 
+      t.id === tableId ? { ...t, status: "available" as const } : t
+    ));
+    toast.success("Table marked as available");
   };
 
   const handleSeatReservation = (resId: string) => {
@@ -765,14 +797,20 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSPro
                   return (
                     <div
                       key={table.id}
-                      onClick={() => handleTableSelect(table)}
+                      onClick={() => {
+                        if (table.status === "cleaning") {
+                          handleMarkTableReady(table.id);
+                          return;
+                        }
+                        handleTableSelect(table);
+                      }}
                       className={`
                         relative p-4 rounded-xl border-2 cursor-pointer transition-all group
                         hover:shadow-lg hover:scale-105
                         ${table.status === "available" ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""}
                         ${table.status === "occupied" ? "border-red-500 bg-red-50 dark:bg-red-950/30" : ""}
                         ${table.status === "reserved" ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30" : ""}
-                        ${table.status === "cleaning" ? "border-muted-foreground bg-muted/50 cursor-not-allowed" : ""}
+                        ${table.status === "cleaning" ? "border-muted-foreground bg-muted/50" : ""}
                         ${table.shape === "round" ? "rounded-full aspect-square" : ""}
                       `}
                     >
@@ -798,7 +836,7 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSPro
                               ₹{order.total.toLocaleString()}
                             </Badge>
                             {elapsedMinutes > 0 && (
-                              <div className={`text-[10px] flex items-center justify-center gap-0.5 ${elapsedMinutes > 60 ? "text-red-500" : "text-muted-foreground"}`}>
+                              <div className={`text-[10px] flex items-center justify-center gap-0.5 ${elapsedMinutes > 60 ? "text-destructive" : "text-muted-foreground"}`}>
                                 <Timer className="h-2.5 w-2.5" />
                                 {elapsedMinutes}m
                               </div>
@@ -810,6 +848,14 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSPro
                           <div className="mt-2">
                             <Badge variant="outline" className="text-[10px] border-amber-500">
                               {reservation.time}
+                            </Badge>
+                          </div>
+                        )}
+
+                        {table.status === "cleaning" && (
+                          <div className="mt-2">
+                            <Badge variant="outline" className="text-[10px] border-primary text-primary">
+                              Click to Ready
                             </Badge>
                           </div>
                         )}

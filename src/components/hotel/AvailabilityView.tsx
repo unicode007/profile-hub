@@ -21,6 +21,7 @@ import { MaintenanceManager, MaintenanceStaff } from "./MaintenanceManager";
 import { MinibarManager } from "./MinibarManager";
 import { StaffLoginPortal, DemoStaffUser } from "./StaffLoginPortal";
 import { RestaurantPOS } from "./RestaurantPOS";
+import { KitchenDisplayScreen } from "./KitchenDisplayScreen";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,6 +59,7 @@ import {
   Wine,
   LogIn,
   UtensilsCrossed,
+  Monitor,
 } from "lucide-react";
 import { Package, AlertTriangle } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
@@ -114,7 +116,8 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant" | "kitchendisplay">("room");
+  const [restaurantOrders, setRestaurantOrders] = useState<any[]>([]);
   const [loggedInStaff, setLoggedInStaff] = useState<DemoStaffUser | null>(null);
   const [maintenanceUser, setMaintenanceUser] = useState<MaintenanceStaff | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -463,6 +466,10 @@ export const AvailabilityView = ({
             <UtensilsCrossed className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Restaurant</span>
           </TabsTrigger>
+          <TabsTrigger value="kitchendisplay" className="gap-1.5 text-xs">
+            <Monitor className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Kitchen KDS</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -678,6 +685,16 @@ export const AvailabilityView = ({
             onAddChargeToFolio={(bookingId, amount, description) => {
               toast.success(`₹${amount} added to guest folio for ${description}`);
             }}
+            onOrdersUpdate={(orders) => setRestaurantOrders(orders)}
+          />
+        </TabsContent>
+
+        <TabsContent value="kitchendisplay" className="mt-6">
+          <KitchenDisplayScreen
+            orders={restaurantOrders}
+            onUpdateItemStatus={(orderId, itemId, status) => {
+              toast.success(`Item status updated to ${status}`);
+            }}
           />
         </TabsContent>
       </Tabs>
@@ -693,9 +710,10 @@ export const AvailabilityView = ({
           <li><strong>Rooms:</strong> Manage physical rooms, assign at check-in</li>
           <li><strong>Types:</strong> Manage room inventory, block rooms</li>
           <li><strong>Maintenance:</strong> Track repairs with supervisor/staff workflow</li>
-          <li><strong>Minibar:</strong> Room minibar inventory and charges</li>
+          <li><strong>Minibar:</strong> Room minibar inventory, charges, and auto-restock</li>
           <li><strong>Staff Portal:</strong> Demo login for different staff roles</li>
           <li><strong>Restaurant:</strong> Full POS with menu, orders, KOT, and billing</li>
+          <li><strong>Kitchen KDS:</strong> Tablet-optimized kitchen display with large buttons</li>
         </ul>
       </div>
 
