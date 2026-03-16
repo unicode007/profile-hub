@@ -326,6 +326,7 @@ const generateDemoOrders = (menuItems: MenuItem[]): RestaurantOrder[] => {
 interface RestaurantPOSProps {
   bookings: Booking[];
   onAddChargeToFolio: (bookingId: string, amount: number, description: string) => void;
+  onOrdersUpdate?: (orders: RestaurantOrder[]) => void;
 }
 
 const getCategoryIcon = (iconName: string) => {
