@@ -504,8 +504,12 @@ export const MinibarManager = ({
             Charges
           </TabsTrigger>
           <TabsTrigger value="reports" className="gap-2">
-            <ShoppingCart className="h-4 w-4" />
+            <BarChart3 className="h-4 w-4" />
             Reports
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Settings
           </TabsTrigger>
         </TabsList>
 
