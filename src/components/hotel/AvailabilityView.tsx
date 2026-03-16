@@ -21,6 +21,7 @@ import { MaintenanceManager, MaintenanceStaff } from "./MaintenanceManager";
 import { MinibarManager } from "./MinibarManager";
 import { StaffLoginPortal, DemoStaffUser } from "./StaffLoginPortal";
 import { RestaurantPOS } from "./RestaurantPOS";
+import { KitchenDisplayScreen } from "./KitchenDisplayScreen";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
