@@ -466,6 +466,10 @@ export const AvailabilityView = ({
             <UtensilsCrossed className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Restaurant</span>
           </TabsTrigger>
+          <TabsTrigger value="kitchendisplay" className="gap-1.5 text-xs">
+            <Monitor className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Kitchen KDS</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
