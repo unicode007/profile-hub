@@ -711,33 +711,27 @@ export const MinibarManager = ({
           </Card>
         </TabsContent>
 
-        <TabsContent value="reports" className="mt-4">
+        <TabsContent value="reports" className="mt-4 space-y-4">
+          {/* Summary Stats */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">Today's Revenue</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹4,850</div>
+                <div className="text-2xl font-bold">
+                  ₹{charges.filter(c => c.status !== "disputed").reduce((s, c) => s + c.totalAmount, 0).toLocaleString()}
+                </div>
                 <p className="text-xs text-muted-foreground">+12% from yesterday</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">This Week</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Transactions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹28,450</div>
-                <p className="text-xs text-muted-foreground">45 transactions</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Top Selling</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">Mineral Water</div>
-                <p className="text-xs text-muted-foreground">124 units sold</p>
+                <div className="text-2xl font-bold">{charges.length}</div>
+                <p className="text-xs text-muted-foreground">{charges.filter(c => c.status === "pending").length} pending</p>
               </CardContent>
             </Card>
             <Card>
@@ -745,11 +739,175 @@ export const MinibarManager = ({
                 <CardTitle className="text-sm font-medium text-muted-foreground">Avg per Room</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">₹385</div>
+                <div className="text-2xl font-bold">
+                  ₹{roomMinibars.length > 0 ? Math.round(charges.reduce((s, c) => s + c.totalAmount, 0) / roomMinibars.length) : 0}
+                </div>
                 <p className="text-xs text-muted-foreground">Per occupied night</p>
               </CardContent>
             </Card>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Disputed</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-destructive">{charges.filter(c => c.status === "disputed").length}</div>
+                <p className="text-xs text-muted-foreground">Needs review</p>
+              </CardContent>
+            </Card>
           </div>
+
+          {/* Top Selling Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-primary" />
+                Top Selling Items
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {topSellingItems.map((item, idx) => (
+                  <div key={idx} className="flex items-center gap-3">
+                    <Badge variant="outline" className="w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                      {idx + 1}
+                    </Badge>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">{item.name}</span>
+                        <span className="font-bold">₹{item.revenue.toLocaleString()}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>{item.count} units sold</span>
+                      </div>
+                      <Progress value={(item.revenue / (topSellingItems[0]?.revenue || 1)) * 100} className="h-1.5 mt-1" />
+                    </div>
+                  </div>
+                ))}
+                {topSellingItems.length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">No consumption data yet</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Category Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Revenue by Category
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(consumptionByCategory).map(([cat, data]) => {
+                  const config = categoryConfig[cat as keyof typeof categoryConfig];
+                  const Icon = config?.icon || Package;
+                  return (
+                    <Card key={cat} className="bg-muted/30">
+                      <CardContent className="py-3 px-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon className={`h-4 w-4 ${config?.color || "text-muted-foreground"}`} />
+                          <span className="font-medium capitalize">{config?.label || cat}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{data.count} items</span>
+                          <span className="font-bold">₹{data.revenue.toLocaleString()}</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Settings Tab */}
+        <TabsContent value="settings" className="mt-4 space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Minibar Settings
+              </CardTitle>
+              <CardDescription>Configure auto-restock and notification preferences</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">Auto-Restock</p>
+                  <p className="text-sm text-muted-foreground">Automatically schedule restocking</p>
+                </div>
+                <Button
+                  variant={autoRestockEnabled ? "default" : "outline"}
+                  onClick={() => {
+                    setAutoRestockEnabled(!autoRestockEnabled);
+                    toast.success(autoRestockEnabled ? "Auto-restock disabled" : "Auto-restock enabled");
+                  }}
+                >
+                  {autoRestockEnabled ? "Enabled" : "Disabled"}
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Restock Schedule</Label>
+                <Select value={restockSchedule} onValueChange={(v) => setRestockSchedule(v as typeof restockSchedule)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Daily (6 AM)</SelectItem>
+                    <SelectItem value="checkout">After Checkout</SelectItem>
+                    <SelectItem value="manual">Manual Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Low Stock Alert Threshold</Label>
+                <div className="flex items-center gap-3">
+                  <Button variant="outline" size="icon" onClick={() => setAlertThreshold(Math.max(1, alertThreshold - 1))}>
+                    <Minus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xl font-bold w-12 text-center">{alertThreshold}</span>
+                  <Button variant="outline" size="icon" onClick={() => setAlertThreshold(Math.min(5, alertThreshold + 1))}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm text-muted-foreground">items remaining triggers alert</span>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">Guest Notification</p>
+                  <p className="text-sm text-muted-foreground">Notify guests of minibar charges on checkout</p>
+                </div>
+                <Badge variant="secondary">Enabled</Badge>
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-lg border">
+                <div>
+                  <p className="font-medium">Supervisor Alerts</p>
+                  <p className="text-sm text-muted-foreground">Alert supervisor for disputed charges</p>
+                </div>
+                <Badge variant="secondary">Enabled</Badge>
+              </div>
+
+              <Button 
+                variant="outline" 
+                className="w-full gap-2" 
+                onClick={() => {
+                  setIsBulkRestockOpen(true);
+                }}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Bulk Restock All Rooms ({stats.needsRestock} pending)
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
@@ -859,6 +1017,42 @@ export const MinibarManager = ({
             <Button onClick={handleConfirmRestock}>
               <RefreshCw className="h-4 w-4 mr-1" />
               Confirm Restock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Restock Dialog */}
+      <Dialog open={isBulkRestockOpen} onOpenChange={setIsBulkRestockOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Restock All Rooms</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              This will restock all {stats.needsRestock} rooms that need restocking to standard quantities.
+            </p>
+            <div className="bg-muted rounded-lg p-4 space-y-2">
+              <div className="flex justify-between text-sm">
+                <span>Rooms to restock</span>
+                <span className="font-bold">{stats.needsRestock}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span>Items per room</span>
+                <span className="font-bold">{items.length}</span>
+              </div>
+              <Separator />
+              <div className="flex justify-between font-medium">
+                <span>Estimated time</span>
+                <span>{stats.needsRestock * 5} minutes</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsBulkRestockOpen(false)}>Cancel</Button>
+            <Button onClick={handleBulkRestock} className="gap-2">
+              <RefreshCw className="h-4 w-4" />
+              Restock {stats.needsRestock} Rooms
             </Button>
           </DialogFooter>
         </DialogContent>
