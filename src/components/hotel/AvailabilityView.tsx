@@ -710,9 +710,10 @@ export const AvailabilityView = ({
           <li><strong>Rooms:</strong> Manage physical rooms, assign at check-in</li>
           <li><strong>Types:</strong> Manage room inventory, block rooms</li>
           <li><strong>Maintenance:</strong> Track repairs with supervisor/staff workflow</li>
-          <li><strong>Minibar:</strong> Room minibar inventory and charges</li>
+          <li><strong>Minibar:</strong> Room minibar inventory, charges, and auto-restock</li>
           <li><strong>Staff Portal:</strong> Demo login for different staff roles</li>
           <li><strong>Restaurant:</strong> Full POS with menu, orders, KOT, and billing</li>
+          <li><strong>Kitchen KDS:</strong> Tablet-optimized kitchen display with large buttons</li>
         </ul>
       </div>
 
