@@ -685,6 +685,16 @@ export const AvailabilityView = ({
             onAddChargeToFolio={(bookingId, amount, description) => {
               toast.success(`₹${amount} added to guest folio for ${description}`);
             }}
+            onOrdersUpdate={(orders) => setRestaurantOrders(orders)}
+          />
+        </TabsContent>
+
+        <TabsContent value="kitchendisplay" className="mt-6">
+          <KitchenDisplayScreen
+            orders={restaurantOrders}
+            onUpdateItemStatus={(orderId, itemId, status) => {
+              toast.success(`Item status updated to ${status}`);
+            }}
           />
         </TabsContent>
       </Tabs>
