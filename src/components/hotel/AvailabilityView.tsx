@@ -116,7 +116,8 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant" | "kitchendisplay">("room");
+  const [restaurantOrders, setRestaurantOrders] = useState<any[]>([]);
   const [loggedInStaff, setLoggedInStaff] = useState<DemoStaffUser | null>(null);
   const [maintenanceUser, setMaintenanceUser] = useState<MaintenanceStaff | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
