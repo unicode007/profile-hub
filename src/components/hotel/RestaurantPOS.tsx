@@ -343,7 +343,7 @@ const getCategoryIcon = (iconName: string) => {
   }
 };
 
-export const RestaurantPOS = ({ bookings, onAddChargeToFolio }: RestaurantPOSProps) => {
+export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: RestaurantPOSProps) => {
   const [tables, setTables] = useState<RestaurantTable[]>(generateDemoTables);
   const [orders, setOrders] = useState<RestaurantOrder[]>(() => generateDemoOrders(demoMenuItems));
   const [reservations, setReservations] = useState<TableReservation[]>(generateDemoReservations);
