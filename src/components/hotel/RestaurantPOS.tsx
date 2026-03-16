@@ -367,6 +367,11 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
   const [kotCounter, setKotCounter] = useState(1004);
   const [kdsAudioEnabled, setKdsAudioEnabled] = useState(true);
 
+  // Notify parent of orders changes for KDS
+  useEffect(() => {
+    onOrdersUpdate?.(orders);
+  }, [orders, onOrdersUpdate]);
+
   // Get active bookings for room charge linking
   const activeBookings = bookings.filter(b => b.status === "checked-in");
 
