@@ -695,9 +695,14 @@ export const MinibarManager = ({
                             <div className="flex flex-col items-end gap-2">
                               <span className="text-xl font-bold">₹{charge.totalAmount}</span>
                               {charge.status === "pending" && (
-                                <Button size="sm" onClick={() => handleAddToFolio(charge)}>
-                                  Add to Folio
-                                </Button>
+                                <div className="flex flex-col gap-1">
+                                  <Button size="sm" onClick={() => handleAddToFolio(charge)}>
+                                    Add to Folio
+                                  </Button>
+                                  <Button size="sm" variant="outline" className="text-destructive" onClick={() => handleDispute(charge.id)}>
+                                    Dispute
+                                  </Button>
+                                </div>
                               )}
                             </div>
                           </div>
