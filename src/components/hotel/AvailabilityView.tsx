@@ -717,6 +717,27 @@ export const AvailabilityView = ({
             }}
           />
         </TabsContent>
+
+        <TabsContent value="guestcomm" className="mt-6">
+          <GuestCommunication bookings={bookings} />
+        </TabsContent>
+
+        <TabsContent value="nightaudit" className="mt-6">
+          <NightAuditReports hotels={hotels} bookings={bookings} />
+        </TabsContent>
+
+        <TabsContent value="lostfound" className="mt-6">
+          <LostAndFound />
+        </TabsContent>
+
+        <TabsContent value="laundry" className="mt-6">
+          <LaundryManagement
+            bookings={bookings}
+            onAddChargeToFolio={(bookingId, amount, description) => {
+              toast.success(`₹${amount} added to folio for ${description}`);
+            }}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Tips Section */}
