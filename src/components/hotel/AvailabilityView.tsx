@@ -755,6 +755,10 @@ export const AvailabilityView = ({
           <li><strong>Staff Portal:</strong> Demo login for different staff roles</li>
           <li><strong>Restaurant:</strong> Full POS with menu, orders, KOT, and billing</li>
           <li><strong>Kitchen KDS:</strong> Tablet-optimized kitchen display with large buttons</li>
+          <li><strong>Guest Comm:</strong> Wake-up calls, complaints, guest requests</li>
+          <li><strong>Night Audit:</strong> End-of-day reconciliation, revenue reports</li>
+          <li><strong>Lost & Found:</strong> Track found items, claims, and disposals</li>
+          <li><strong>Laundry:</strong> Guest laundry orders, pricing, pickup/delivery</li>
         </ul>
       </div>
 
