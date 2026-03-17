@@ -22,6 +22,10 @@ import { MinibarManager } from "./MinibarManager";
 import { StaffLoginPortal, DemoStaffUser } from "./StaffLoginPortal";
 import { RestaurantPOS } from "./RestaurantPOS";
 import { KitchenDisplayScreen } from "./KitchenDisplayScreen";
+import { GuestCommunication } from "./GuestCommunication";
+import { NightAuditReports } from "./NightAuditReports";
+import { LostAndFound } from "./LostAndFound";
+import { LaundryManagement } from "./LaundryManagement";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -61,7 +65,7 @@ import {
   UtensilsCrossed,
   Monitor,
 } from "lucide-react";
-import { Package, AlertTriangle } from "lucide-react";
+import { Package, AlertTriangle, MessageSquare, Moon, Search as SearchIcon, Shirt } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
 interface AvailabilityViewProps {
@@ -116,7 +120,7 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant" | "kitchendisplay">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant" | "kitchendisplay" | "guestcomm" | "nightaudit" | "lostfound" | "laundry">("room");
   const [restaurantOrders, setRestaurantOrders] = useState<any[]>([]);
   const [loggedInStaff, setLoggedInStaff] = useState<DemoStaffUser | null>(null);
   const [maintenanceUser, setMaintenanceUser] = useState<MaintenanceStaff | null>(null);
@@ -470,6 +474,22 @@ export const AvailabilityView = ({
             <Monitor className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Kitchen KDS</span>
           </TabsTrigger>
+          <TabsTrigger value="guestcomm" className="gap-1.5 text-xs">
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Guest Comm</span>
+          </TabsTrigger>
+          <TabsTrigger value="nightaudit" className="gap-1.5 text-xs">
+            <Moon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Night Audit</span>
+          </TabsTrigger>
+          <TabsTrigger value="lostfound" className="gap-1.5 text-xs">
+            <SearchIcon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Lost & Found</span>
+          </TabsTrigger>
+          <TabsTrigger value="laundry" className="gap-1.5 text-xs">
+            <Shirt className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Laundry</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -697,6 +717,27 @@ export const AvailabilityView = ({
             }}
           />
         </TabsContent>
+
+        <TabsContent value="guestcomm" className="mt-6">
+          <GuestCommunication bookings={bookings} />
+        </TabsContent>
+
+        <TabsContent value="nightaudit" className="mt-6">
+          <NightAuditReports hotels={hotels} bookings={bookings} />
+        </TabsContent>
+
+        <TabsContent value="lostfound" className="mt-6">
+          <LostAndFound />
+        </TabsContent>
+
+        <TabsContent value="laundry" className="mt-6">
+          <LaundryManagement
+            bookings={bookings}
+            onAddChargeToFolio={(bookingId, amount, description) => {
+              toast.success(`₹${amount} added to folio for ${description}`);
+            }}
+          />
+        </TabsContent>
       </Tabs>
 
       {/* Tips Section */}
@@ -714,6 +755,10 @@ export const AvailabilityView = ({
           <li><strong>Staff Portal:</strong> Demo login for different staff roles</li>
           <li><strong>Restaurant:</strong> Full POS with menu, orders, KOT, and billing</li>
           <li><strong>Kitchen KDS:</strong> Tablet-optimized kitchen display with large buttons</li>
+          <li><strong>Guest Comm:</strong> Wake-up calls, complaints, guest requests</li>
+          <li><strong>Night Audit:</strong> End-of-day reconciliation, revenue reports</li>
+          <li><strong>Lost & Found:</strong> Track found items, claims, and disposals</li>
+          <li><strong>Laundry:</strong> Guest laundry orders, pricing, pickup/delivery</li>
         </ul>
       </div>
 

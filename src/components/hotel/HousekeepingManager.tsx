@@ -315,6 +315,16 @@ export const HousekeepingManager = ({
     );
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(t => t.id !== taskId));
+    toast.success("Task deleted");
+  };
+
+  const handleEditTask = (taskId: string, updates: Partial<HousekeepingTask>) => {
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    toast.success("Task updated");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Stats */}
@@ -480,6 +490,7 @@ export const HousekeepingManager = ({
                   onVerify={() => handleVerifyTask(task.id)}
                   onAssign={(staffId) => handleAssignTask(task.id, staffId)}
                   onViewDetails={() => setSelectedTask(task)}
+                  onDelete={() => handleDeleteTask(task.id)}
                 />
               ))
             )}
@@ -724,6 +735,7 @@ const TaskCard = ({
   onVerify,
   onAssign,
   onViewDetails,
+  onDelete,
 }: {
   task: HousekeepingTask;
   staff: HousekeepingStaff[];
@@ -732,6 +744,7 @@ const TaskCard = ({
   onVerify: () => void;
   onAssign: (staffId: string) => void;
   onViewDetails: () => void;
+  onDelete: () => void;
 }) => {
   const assignedStaff = task.assignedTo ? staff.find((s) => s.id === task.assignedTo) : null;
 
@@ -818,6 +831,9 @@ const TaskCard = ({
                     ))}
                   </>
                 )}
+                <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                  <Trash2 className="h-4 w-4 mr-2" />Delete
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

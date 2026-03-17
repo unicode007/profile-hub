@@ -379,6 +379,11 @@ export const MaintenanceManager = ({
     toast.warning("Task escalated to management!");
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(t => t.id !== taskId));
+    toast.success("Task deleted");
+  };
+
   const handleCreateTask = () => {
     const room = physicalRooms.find((r) => r.id === newTask.roomId);
     if (!room || !newTask.title) {
@@ -724,6 +729,15 @@ export const MaintenanceManager = ({
                               Escalate
                             </Button>
                           )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8"><MoreVertical className="h-4 w-4" /></Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setSelectedTask(task)}>View Details</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteTask(task.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </CardContent>
