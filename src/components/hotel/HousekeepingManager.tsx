@@ -735,6 +735,7 @@ const TaskCard = ({
   onVerify,
   onAssign,
   onViewDetails,
+  onDelete,
 }: {
   task: HousekeepingTask;
   staff: HousekeepingStaff[];
@@ -743,6 +744,7 @@ const TaskCard = ({
   onVerify: () => void;
   onAssign: (staffId: string) => void;
   onViewDetails: () => void;
+  onDelete: () => void;
 }) => {
   const assignedStaff = task.assignedTo ? staff.find((s) => s.id === task.assignedTo) : null;
 
