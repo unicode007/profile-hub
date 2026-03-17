@@ -490,6 +490,7 @@ export const HousekeepingManager = ({
                   onVerify={() => handleVerifyTask(task.id)}
                   onAssign={(staffId) => handleAssignTask(task.id, staffId)}
                   onViewDetails={() => setSelectedTask(task)}
+                  onDelete={() => handleDeleteTask(task.id)}
                 />
               ))
             )}
