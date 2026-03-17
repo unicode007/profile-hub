@@ -315,6 +315,16 @@ export const HousekeepingManager = ({
     );
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(t => t.id !== taskId));
+    toast.success("Task deleted");
+  };
+
+  const handleEditTask = (taskId: string, updates: Partial<HousekeepingTask>) => {
+    setTasks(tasks.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    toast.success("Task updated");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Stats */}
