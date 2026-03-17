@@ -379,6 +379,11 @@ export const MaintenanceManager = ({
     toast.warning("Task escalated to management!");
   };
 
+  const handleDeleteTask = (taskId: string) => {
+    setTasks(tasks.filter(t => t.id !== taskId));
+    toast.success("Task deleted");
+  };
+
   const handleCreateTask = () => {
     const room = physicalRooms.find((r) => r.id === newTask.roomId);
     if (!room || !newTask.title) {
