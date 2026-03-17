@@ -474,6 +474,22 @@ export const AvailabilityView = ({
             <Monitor className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Kitchen KDS</span>
           </TabsTrigger>
+          <TabsTrigger value="guestcomm" className="gap-1.5 text-xs">
+            <MessageSquare className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Guest Comm</span>
+          </TabsTrigger>
+          <TabsTrigger value="nightaudit" className="gap-1.5 text-xs">
+            <Moon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Night Audit</span>
+          </TabsTrigger>
+          <TabsTrigger value="lostfound" className="gap-1.5 text-xs">
+            <SearchIcon className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Lost & Found</span>
+          </TabsTrigger>
+          <TabsTrigger value="laundry" className="gap-1.5 text-xs">
+            <Shirt className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Laundry</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
