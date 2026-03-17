@@ -51,7 +51,7 @@ interface AuditRecord {
 
 const generateAuditData = (bookings: Booking[], hotels: Hotel[]): AuditRecord[] => {
   const records: AuditRecord[] = [];
-  const totalRooms = hotels.reduce((sum, h) => sum + h.roomTypes.reduce((s, rt) => s + (rt.rooms || 5), 0), 0);
+  const totalRooms = hotels.reduce((sum, h) => sum + h.roomTypes.length * 5, 0);
 
   for (let i = 0; i < 7; i++) {
     const date = subDays(new Date(), i);

@@ -213,7 +213,7 @@ export const LostAndFound = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         {(item.status === "stored" || item.status === "pending-claim") && (
-                          <Button size="sm" variant="outline" onClick={() => { setClaimItem(item); setClaimInfo(item.claimant || { name: "", phone: "", email: "", idProof: "" }); setIsClaimOpen(true); }}>
+                          <Button size="sm" variant="outline" onClick={() => { setClaimItem(item); setClaimInfo({ name: item.claimant?.name || "", phone: item.claimant?.phone || "", email: item.claimant?.email || "", idProof: item.claimant?.idProof || "" }); setIsClaimOpen(true); }}>
                             <HandCoins className="h-4 w-4 mr-1" />Claim
                           </Button>
                         )}
