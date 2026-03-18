@@ -3,15 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-type TableName = "hotels" | "room_types" | "physical_rooms" | "bookings" | 
-  "housekeeping_tasks" | "maintenance_tasks" | "menu_categories" | "menu_items" |
-  "restaurant_orders" | "restaurant_order_items" | "minibar_items" | "minibar_charges" |
-  "laundry_orders" | "lost_and_found" | "guest_communications" | "inventory_items" |
-  "inventory_transactions" | "night_audit_logs" | "staff_shifts" | "table_reservations" |
-  "folio_charges" | "profiles" | "user_roles";
-
-export function useTableQuery<T = any>(
-  table: TableName,
+export function useTableQuery(
+  table: string,
   options?: {
     filters?: Record<string, any>;
     orderBy?: { column: string; ascending?: boolean };
@@ -23,7 +16,7 @@ export function useTableQuery<T = any>(
   return useQuery({
     queryKey: [table, options?.filters, currentHotelId],
     queryFn: async () => {
-      let query = supabase.from(table).select("*");
+      let query = (supabase.from(table as any) as any).select("*");
       
       if (options?.filters) {
         Object.entries(options.filters).forEach(([key, value]) => {
@@ -33,7 +26,6 @@ export function useTableQuery<T = any>(
         });
       }
       
-      // Auto-filter by hotel_id if applicable
       if (currentHotelId && !options?.filters?.hotel_id && 
           table !== "hotels" && table !== "profiles" && table !== "user_roles") {
         query = query.eq("hotel_id", currentHotelId);
@@ -47,67 +39,48 @@ export function useTableQuery<T = any>(
       
       const { data, error } = await query;
       if (error) throw error;
-      return data as T[];
+      return data as any[];
     },
     enabled: options?.enabled !== false,
   });
 }
 
-export function useTableMutation<T = any>(table: TableName) {
+export function useTableMutation(table: string) {
   const queryClient = useQueryClient();
   const { currentHotelId, user } = useAuth();
 
   const insertMutation = useMutation({
-    mutationFn: async (record: Partial<T> & Record<string, any>) => {
+    mutationFn: async (record: Record<string, any>) => {
       const insertData: Record<string, any> = { ...record };
       if (currentHotelId && !insertData.hotel_id && table !== "hotels" && table !== "profiles" && table !== "user_roles") {
         insertData.hotel_id = currentHotelId;
       }
-      if (user && !insertData.created_by && "created_by" in insertData === false) {
-        // Only set if column exists - we'll let it fail gracefully
-      }
-      const { data, error } = await supabase.from(table).insert(insertData).select().single();
+      const { data, error } = await (supabase.from(table as any) as any).insert(insertData).select().single();
       if (error) throw error;
-      return data as T;
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [table] });
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to create: ${error.message}`);
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [table] }); },
+    onError: (error: Error) => { toast.error(`Failed: ${error.message}`); },
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, ...updates }: { id: string } & Partial<T> & Record<string, any>) => {
-      const { data, error } = await supabase.from(table).update(updates).eq("id", id).select().single();
+    mutationFn: async ({ id, ...updates }: { id: string;[key: string]: any }) => {
+      const { data, error } = await (supabase.from(table as any) as any).update(updates).eq("id", id).select().single();
       if (error) throw error;
-      return data as T;
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [table] });
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to update: ${error.message}`);
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [table] }); },
+    onError: (error: Error) => { toast.error(`Failed: ${error.message}`); },
   });
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from(table).delete().eq("id", id);
+      const { error } = await (supabase.from(table as any) as any).delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [table] });
-    },
-    onError: (error: Error) => {
-      toast.error(`Failed to delete: ${error.message}`);
-    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: [table] }); },
+    onError: (error: Error) => { toast.error(`Failed: ${error.message}`); },
   });
 
-  return {
-    insert: insertMutation,
-    update: updateMutation,
-    remove: deleteMutation,
-  };
+  return { insert: insertMutation, update: updateMutation, remove: deleteMutation };
 }
