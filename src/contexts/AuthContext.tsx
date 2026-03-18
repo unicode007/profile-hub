@@ -1,320 +1,148 @@
-import { createContext, useContext, useState, ReactNode } from "react";
-import { User, Booking } from "@/components/hotel/types";
-import { addDays, subDays } from "date-fns";
-import { Review, DEMO_REVIEWS } from "@/components/hotel/ReviewsRatings";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import type { User, Session } from "@supabase/supabase-js";
+
+export type AppRole = 
+  | "super_admin" | "hotel_admin" | "front_desk" | "housekeeping" 
+  | "maintenance" | "restaurant" | "inventory" | "laundry" 
+  | "guest_comm" | "lost_found" | "staff";
+
+export interface Profile {
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  avatar_url: string | null;
+  department: string | null;
+}
+
+export interface UserRole {
+  role: AppRole;
+  hotel_id: string | null;
+}
 
 interface AuthContextType {
   user: User | null;
-  isAuthenticated: boolean;
-  bookings: Booking[];
-  allBookings: Booking[]; // For hotel management dashboard
-  reviews: Review[];
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  addBooking: (booking: Booking) => void;
-  cancelBooking: (bookingId: string) => void;
-  checkIn: (bookingId: string) => void;
-  checkOut: (bookingId: string) => void;
-  updateBookingStatus: (bookingId: string, status: Booking["status"]) => void;
-  moveBooking: (bookingId: string, newCheckIn: Date, newCheckOut: Date) => void;
-  addReview: (review: Omit<Review, "id" | "createdAt" | "helpful">) => void;
+  session: Session | null;
+  profile: Profile | null;
+  roles: UserRole[];
+  loading: boolean;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
+  hasRole: (role: AppRole) => boolean;
+  hasAnyRole: (roles: AppRole[]) => boolean;
+  isAdmin: boolean;
+  currentHotelId: string | null;
+  setCurrentHotelId: (id: string | null) => void;
+  refreshRoles: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-// Demo bookings for the demo user
-const DEMO_BOOKINGS: Booking[] = [
-  {
-    id: "BK001DEMO",
-    hotelId: "demo-1",
-    hotelName: "Grand Palace Hotel",
-    hotelImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-    hotelAddress: "123 Main Street, Downtown, Hyderabad",
-    roomName: "Deluxe Room - Queen Bed",
-    planName: "Room with Breakfast",
-    checkIn: addDays(new Date(), 1),
-    checkOut: addDays(new Date(), 4),
-    guests: { adults: 2, children: 1 },
-    rooms: 1,
-    guestInfo: {
-      firstName: "Demo",
-      lastName: "User",
-      email: "demo@example.com",
-      phone: "+91 9876543210",
-      country: "India",
-    },
-    totalAmount: 5823,
-    status: "confirmed",
-    paymentMethod: "card",
-    createdAt: new Date(),
-  },
-  {
-    id: "BK002DEMO",
-    hotelId: "demo-6",
-    hotelName: "Heritage Palace Hotel",
-    hotelImage: "https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=800",
-    hotelAddress: "Palace Road, Old City, Jaipur",
-    roomName: "Royal Suite",
-    planName: "Royal Experience",
-    checkIn: subDays(new Date(), 10),
-    checkOut: subDays(new Date(), 7),
-    guests: { adults: 2, children: 0 },
-    rooms: 1,
-    guestInfo: {
-      firstName: "Demo",
-      lastName: "User",
-      email: "demo@example.com",
-      phone: "+91 9876543210",
-      country: "India",
-    },
-    totalAmount: 40317,
-    status: "completed",
-    paymentMethod: "upi",
-    createdAt: subDays(new Date(), 15),
-  },
-  {
-    id: "BK003DEMO",
-    hotelId: "demo-2",
-    hotelName: "Seaside Beach Resort",
-    hotelImage: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800",
-    hotelAddress: "Beach Road, Coastal Area, Goa",
-    roomName: "Ocean View Cottage",
-    planName: "Beach Getaway Package",
-    checkIn: addDays(new Date(), 30),
-    checkOut: addDays(new Date(), 34),
-    guests: { adults: 2, children: 2 },
-    rooms: 2,
-    guestInfo: {
-      firstName: "Demo",
-      lastName: "User",
-      email: "demo@example.com",
-      phone: "+91 9876543210",
-      country: "India",
-    },
-    totalAmount: 53752,
-    status: "pending",
-    paymentMethod: "payathotel",
-    createdAt: new Date(),
-  },
-];
-
-// Additional bookings for hotel management demo
-const ALL_DEMO_BOOKINGS: Booking[] = [
-  ...DEMO_BOOKINGS,
-  {
-    id: "BK004DEMO",
-    hotelId: "demo-1",
-    hotelName: "Grand Palace Hotel",
-    hotelImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-    hotelAddress: "123 Main Street, Downtown, Hyderabad",
-    roomName: "Executive Suite",
-    planName: "Suite With Free Cancellation",
-    checkIn: new Date(),
-    checkOut: addDays(new Date(), 2),
-    guests: { adults: 2, children: 0 },
-    rooms: 1,
-    guestInfo: {
-      firstName: "Rahul",
-      lastName: "Sharma",
-      email: "rahul@example.com",
-      phone: "+91 9876543211",
-      country: "India",
-    },
-    totalAmount: 8540,
-    status: "confirmed",
-    paymentMethod: "card",
-    createdAt: subDays(new Date(), 3),
-  },
-  {
-    id: "BK005DEMO",
-    hotelId: "demo-1",
-    hotelName: "Grand Palace Hotel",
-    hotelImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-    hotelAddress: "123 Main Street, Downtown, Hyderabad",
-    roomName: "Deluxe Room - Queen Bed",
-    planName: "Room with Breakfast",
-    checkIn: subDays(new Date(), 1),
-    checkOut: new Date(),
-    guests: { adults: 1, children: 0 },
-    rooms: 1,
-    guestInfo: {
-      firstName: "Priya",
-      lastName: "Patel",
-      email: "priya@example.com",
-      phone: "+91 9876543212",
-      country: "India",
-    },
-    totalAmount: 1941,
-    status: "checked-in",
-    paymentMethod: "upi",
-    createdAt: subDays(new Date(), 5),
-    checkInTime: subDays(new Date(), 1),
-  },
-  {
-    id: "BK006DEMO",
-    hotelId: "demo-1",
-    hotelName: "Grand Palace Hotel",
-    hotelImage: "https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800",
-    hotelAddress: "123 Main Street, Downtown, Hyderabad",
-    roomName: "Premium Suite",
-    planName: "Premium Stay",
-    checkIn: addDays(new Date(), 7),
-    checkOut: addDays(new Date(), 10),
-    guests: { adults: 2, children: 1 },
-    rooms: 1,
-    guestInfo: {
-      firstName: "Amit",
-      lastName: "Kumar",
-      email: "amit@example.com",
-      phone: "+91 9876543213",
-      country: "India",
-    },
-    totalAmount: 23517,
-    status: "confirmed",
-    paymentMethod: "card",
-    createdAt: new Date(),
-  },
-  {
-    id: "BK007DEMO",
-    hotelId: "demo-3",
-    hotelName: "Mountain View Lodge",
-    hotelImage: "https://images.unsplash.com/photo-1586611292717-f828b167408c?w=800",
-    hotelAddress: "Hill Station Road, Shimla",
-    roomName: "Mountain View Room",
-    planName: "Cozy Mountain Stay",
-    checkIn: new Date(),
-    checkOut: addDays(new Date(), 3),
-    guests: { adults: 2, children: 0 },
-    rooms: 1,
-    guestInfo: {
-      firstName: "Sarah",
-      lastName: "Johnson",
-      email: "sarah@example.com",
-      phone: "+1 555-1234",
-      country: "United States",
-    },
-    totalAmount: 11085,
-    status: "confirmed",
-    paymentMethod: "card",
-    createdAt: subDays(new Date(), 2),
-  },
-];
-
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [allBookings, setAllBookings] = useState<Booking[]>(ALL_DEMO_BOOKINGS);
-  const [reviews, setReviews] = useState<Review[]>(DEMO_REVIEWS);
+  const [session, setSession] = useState<Session | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [roles, setRoles] = useState<UserRole[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentHotelId, setCurrentHotelId] = useState<string | null>(null);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
-    if (email && password) {
-      const demoUser: User = {
-        id: "user-1",
-        email: email,
-        name: email.split("@")[0].charAt(0).toUpperCase() + email.split("@")[0].slice(1),
-        phone: "+91 9876543210",
-        createdAt: new Date(),
-      };
-      setUser(demoUser);
-      setBookings(DEMO_BOOKINGS);
-      return true;
+  const fetchProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", userId)
+      .single();
+    if (data) setProfile(data as Profile);
+  };
+
+  const fetchRoles = async (userId: string) => {
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role, hotel_id")
+      .eq("user_id", userId);
+    if (data) {
+      const userRoles = data.map(r => ({ role: r.role as AppRole, hotel_id: r.hotel_id }));
+      setRoles(userRoles);
+      // Auto-set hotel if user has exactly one
+      const hotelIds = [...new Set(userRoles.filter(r => r.hotel_id).map(r => r.hotel_id!))];
+      if (hotelIds.length === 1 && !currentHotelId) {
+        setCurrentHotelId(hotelIds[0]);
+      }
     }
-    return false;
   };
 
-  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    if (name && email && password) {
-      const newUser: User = {
-        id: `user-${Date.now()}`,
-        email: email,
-        name: name,
-        createdAt: new Date(),
-      };
-      setUser(newUser);
-      setBookings([]);
-      return true;
-    }
-    return false;
+  const refreshRoles = async () => {
+    if (user) await fetchRoles(user.id);
   };
 
-  const logout = () => {
-    setUser(null);
-    setBookings([]);
+  useEffect(() => {
+    // Set up auth listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          // Use setTimeout to avoid Supabase auth deadlock
+          setTimeout(() => {
+            fetchProfile(session.user.id);
+            fetchRoles(session.user.id);
+          }, 0);
+        } else {
+          setProfile(null);
+          setRoles([]);
+          setCurrentHotelId(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Then check existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+        fetchRoles(session.user.id);
+      }
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message ?? null };
   };
 
-  const addBooking = (booking: Booking) => {
-    setBookings((prev) => [booking, ...prev]);
-    setAllBookings((prev) => [booking, ...prev]);
+  const signUp = async (email: string, password: string, fullName: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    return { error: error?.message ?? null };
   };
 
-  const cancelBooking = (bookingId: string) => {
-    const updateStatus = (prev: Booking[]) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" as const } : b));
-    setBookings(updateStatus);
-    setAllBookings(updateStatus);
+  const signOut = async () => {
+    await supabase.auth.signOut();
   };
 
-  const checkIn = (bookingId: string) => {
-    const updateStatus = (prev: Booking[]) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, status: "checked-in" as const, checkInTime: new Date() } : b
-      );
-    setBookings(updateStatus);
-    setAllBookings(updateStatus);
-  };
-
-  const checkOut = (bookingId: string) => {
-    const updateStatus = (prev: Booking[]) =>
-      prev.map((b) =>
-        b.id === bookingId ? { ...b, status: "checked-out" as const, checkOutTime: new Date() } : b
-      );
-    setBookings(updateStatus);
-    setAllBookings(updateStatus);
-  };
-
-  const updateBookingStatus = (bookingId: string, status: Booking["status"]) => {
-    const updateStatus = (prev: Booking[]) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, status } : b));
-    setBookings(updateStatus);
-    setAllBookings(updateStatus);
-  };
-
-  const moveBooking = (bookingId: string, newCheckIn: Date, newCheckOut: Date) => {
-    const update = (prev: Booking[]) =>
-      prev.map((b) => (b.id === bookingId ? { ...b, checkIn: newCheckIn, checkOut: newCheckOut } : b));
-    setBookings(update);
-    setAllBookings(update);
-  };
-
-  const addReview = (review: Omit<Review, "id" | "createdAt" | "helpful">) => {
-    const newReview: Review = {
-      ...review,
-      id: `rev-${Date.now()}`,
-      createdAt: new Date(),
-      helpful: 0,
-    };
-    setReviews((prev) => [newReview, ...prev]);
-  };
+  const hasRole = (role: AppRole) => roles.some(r => r.role === role);
+  const hasAnyRole = (checkRoles: AppRole[]) => checkRoles.some(r => hasRole(r));
+  const isAdmin = hasRole("super_admin") || hasRole("hotel_admin");
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        isAuthenticated: !!user,
-        bookings,
-        allBookings,
-        reviews,
-        login,
-        signup,
-        logout,
-        addBooking,
-        cancelBooking,
-        checkIn,
-        checkOut,
-        updateBookingStatus,
-        moveBooking,
-        addReview,
+        user, session, profile, roles, loading,
+        signIn, signUp, signOut,
+        hasRole, hasAnyRole, isAdmin,
+        currentHotelId, setCurrentHotelId,
+        refreshRoles,
       }}
     >
       {children}
@@ -324,8 +152,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
 };
