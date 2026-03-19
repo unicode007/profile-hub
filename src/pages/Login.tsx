@@ -30,13 +30,18 @@ const Login = () => {
       return;
     }
     setIsLoading(true);
-    const { error } = await signIn(loginEmail, loginPassword);
-    setIsLoading(false);
-    if (error) {
-      toast.error(error);
-    } else {
-      toast.success("Welcome back!");
-      navigate("/dashboard");
+    try {
+      const { error } = await signIn(loginEmail, loginPassword);
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success("Welcome back!");
+        navigate("/dashboard");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
