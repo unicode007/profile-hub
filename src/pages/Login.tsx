@@ -60,12 +60,17 @@ const Login = () => {
       return;
     }
     setIsLoading(true);
-    const { error } = await signUp(signupEmail, signupPassword, signupName);
-    setIsLoading(false);
-    if (error) {
-      toast.error(error);
-    } else {
-      toast.success("Account created! Please check your email to verify.");
+    try {
+      const { error } = await signUp(signupEmail, signupPassword, signupName);
+      if (error) {
+        toast.error(error);
+      } else {
+        toast.success("Account created! Please check your email to verify.");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
