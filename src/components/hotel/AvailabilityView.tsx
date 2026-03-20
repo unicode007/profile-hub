@@ -66,7 +66,7 @@ import {
   UtensilsCrossed,
   Monitor,
 } from "lucide-react";
-import { Package, AlertTriangle, MessageSquare, Moon, Search as SearchIcon, Shirt } from "lucide-react";
+import { Package, AlertTriangle, MessageSquare, Moon, Search as SearchIcon, Shirt, Boxes } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
 interface AvailabilityViewProps {
