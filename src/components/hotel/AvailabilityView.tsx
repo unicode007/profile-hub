@@ -743,6 +743,10 @@ export const AvailabilityView = ({
             }}
           />
         </TabsContent>
+
+        <TabsContent value="procurement" className="mt-6">
+          <InventoryProcurement />
+        </TabsContent>
       </Tabs>
 
       {/* Tips Section */}
