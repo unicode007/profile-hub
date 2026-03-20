@@ -26,6 +26,7 @@ import { GuestCommunication } from "./GuestCommunication";
 import { NightAuditReports } from "./NightAuditReports";
 import { LostAndFound } from "./LostAndFound";
 import { LaundryManagement } from "./LaundryManagement";
+import { InventoryProcurement } from "./InventoryProcurement";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -65,7 +66,7 @@ import {
   UtensilsCrossed,
   Monitor,
 } from "lucide-react";
-import { Package, AlertTriangle, MessageSquare, Moon, Search as SearchIcon, Shirt } from "lucide-react";
+import { Package, AlertTriangle, MessageSquare, Moon, Search as SearchIcon, Shirt, Boxes } from "lucide-react";
 import { format, addMonths, subMonths } from "date-fns";
 
 interface AvailabilityViewProps {
@@ -120,7 +121,7 @@ export const AvailabilityView = ({
   onUpdateBookingStatus,
 }: AvailabilityViewProps) => {
   const [selectedHotelId, setSelectedHotelId] = useState<string>(hotels[0]?.id || "");
-  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant" | "kitchendisplay" | "guestcomm" | "nightaudit" | "lostfound" | "laundry">("room");
+  const [calendarType, setCalendarType] = useState<"room" | "date" | "booking" | "rooms" | "kanban" | "physical" | "housekeeping" | "physicalGrid" | "analytics" | "staff" | "inventory" | "overbooking" | "maintenance" | "minibar" | "staffportal" | "restaurant" | "kitchendisplay" | "guestcomm" | "nightaudit" | "lostfound" | "laundry" | "procurement">("room");
   const [restaurantOrders, setRestaurantOrders] = useState<any[]>([]);
   const [loggedInStaff, setLoggedInStaff] = useState<DemoStaffUser | null>(null);
   const [maintenanceUser, setMaintenanceUser] = useState<MaintenanceStaff | null>(null);
@@ -490,6 +491,10 @@ export const AvailabilityView = ({
             <Shirt className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Laundry</span>
           </TabsTrigger>
+          <TabsTrigger value="procurement" className="gap-1.5 text-xs">
+            <Boxes className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Procurement</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
@@ -737,6 +742,10 @@ export const AvailabilityView = ({
               toast.success(`₹${amount} added to folio for ${description}`);
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="procurement" className="mt-6">
+          <InventoryProcurement />
         </TabsContent>
       </Tabs>
 
