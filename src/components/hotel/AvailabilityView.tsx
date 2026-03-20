@@ -491,6 +491,10 @@ export const AvailabilityView = ({
             <Shirt className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Laundry</span>
           </TabsTrigger>
+          <TabsTrigger value="procurement" className="gap-1.5 text-xs">
+            <Boxes className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Procurement</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="room" className="mt-6">
