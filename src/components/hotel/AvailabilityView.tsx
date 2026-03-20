@@ -26,6 +26,7 @@ import { GuestCommunication } from "./GuestCommunication";
 import { NightAuditReports } from "./NightAuditReports";
 import { LostAndFound } from "./LostAndFound";
 import { LaundryManagement } from "./LaundryManagement";
+import { InventoryProcurement } from "./InventoryProcurement";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
