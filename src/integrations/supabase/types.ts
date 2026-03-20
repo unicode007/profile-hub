@@ -174,6 +174,140 @@ export type Database = {
           },
         ]
       }
+      goods_receipt_items: {
+        Row: {
+          accepted_quantity: number
+          created_at: string
+          grn_id: string
+          id: string
+          item_id: string | null
+          item_name: string
+          ordered_quantity: number
+          po_item_id: string | null
+          received_quantity: number
+          rejected_quantity: number | null
+          rejection_reason: string | null
+          unit: string | null
+        }
+        Insert: {
+          accepted_quantity?: number
+          created_at?: string
+          grn_id: string
+          id?: string
+          item_id?: string | null
+          item_name: string
+          ordered_quantity?: number
+          po_item_id?: string | null
+          received_quantity?: number
+          rejected_quantity?: number | null
+          rejection_reason?: string | null
+          unit?: string | null
+        }
+        Update: {
+          accepted_quantity?: number
+          created_at?: string
+          grn_id?: string
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          ordered_quantity?: number
+          po_item_id?: string | null
+          received_quantity?: number
+          rejected_quantity?: number | null
+          rejection_reason?: string | null
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goods_receipt_items_grn_id_fkey"
+            columns: ["grn_id"]
+            isOneToOne: false
+            referencedRelation: "goods_receipts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipt_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipt_items_po_item_id_fkey"
+            columns: ["po_item_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_order_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goods_receipts: {
+        Row: {
+          created_at: string
+          grn_number: string
+          hotel_id: string
+          id: string
+          notes: string | null
+          po_id: string
+          received_by: string | null
+          received_by_name: string | null
+          received_date: string | null
+          status: string | null
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          grn_number?: string
+          hotel_id: string
+          id?: string
+          notes?: string | null
+          po_id: string
+          received_by?: string | null
+          received_by_name?: string | null
+          received_date?: string | null
+          status?: string | null
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          grn_number?: string
+          hotel_id?: string
+          id?: string
+          notes?: string | null
+          po_id?: string
+          received_by?: string | null
+          received_by_name?: string | null
+          received_date?: string | null
+          status?: string | null
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goods_receipts_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipts_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goods_receipts_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guest_communications: {
         Row: {
           assigned_to: string | null
@@ -724,6 +858,51 @@ export type Database = {
           },
         ]
       }
+      material_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          hotel_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          parent_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          hotel_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          parent_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          hotel_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          parent_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "material_categories_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "material_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "material_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -1124,6 +1303,459 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_order_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          item_name: string
+          notes: string | null
+          po_id: string
+          quantity: number
+          received_quantity: number | null
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          item_name: string
+          notes?: string | null
+          po_id: string
+          quantity?: number
+          received_quantity?: number | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          notes?: string | null
+          po_id?: string
+          quantity?: number
+          received_quantity?: number | null
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_order_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_order_items_po_id_fkey"
+            columns: ["po_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_orders: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          delivery_address: string | null
+          expected_delivery: string | null
+          hotel_id: string
+          id: string
+          notes: string | null
+          payment_terms: string | null
+          po_number: string
+          purchase_request_id: string | null
+          quotation_id: string | null
+          status: string | null
+          subtotal: number | null
+          supplier_id: string
+          tax_amount: number | null
+          total_amount: number | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_address?: string | null
+          expected_delivery?: string | null
+          hotel_id: string
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          po_number?: string
+          purchase_request_id?: string | null
+          quotation_id?: string | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id: string
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivery_address?: string | null
+          expected_delivery?: string | null
+          hotel_id?: string
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          po_number?: string
+          purchase_request_id?: string | null
+          quotation_id?: string | null
+          status?: string | null
+          subtotal?: number | null
+          supplier_id?: string
+          tax_amount?: number | null
+          total_amount?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_orders_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_purchase_request_id_fkey"
+            columns: ["purchase_request_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_request_items: {
+        Row: {
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          item_id: string | null
+          item_name: string
+          notes: string | null
+          quantity: number
+          request_id: string
+          unit: string | null
+        }
+        Insert: {
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          item_id?: string | null
+          item_name: string
+          notes?: string | null
+          quantity?: number
+          request_id: string
+          unit?: string | null
+        }
+        Update: {
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          notes?: string | null
+          quantity?: number
+          request_id?: string
+          unit?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_request_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "purchase_request_items_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      purchase_requests: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          created_at: string
+          department: string | null
+          hotel_id: string
+          id: string
+          notes: string | null
+          priority: string | null
+          request_number: string
+          requested_by: string | null
+          requested_by_name: string | null
+          required_date: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          department?: string | null
+          hotel_id: string
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          request_number?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          required_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          created_at?: string
+          department?: string | null
+          hotel_id?: string
+          id?: string
+          notes?: string | null
+          priority?: string | null
+          request_number?: string
+          requested_by?: string | null
+          requested_by_name?: string | null
+          required_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "purchase_requests_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          item_name: string
+          notes: string | null
+          quantity: number
+          quotation_id: string
+          total_price: number | null
+          unit: string | null
+          unit_price: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          item_name: string
+          notes?: string | null
+          quantity?: number
+          quotation_id: string
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          item_name?: string
+          notes?: string | null
+          quantity?: number
+          quotation_id?: string
+          total_price?: number | null
+          unit?: string | null
+          unit_price?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_items_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "inventory_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_items_quotation_id_fkey"
+            columns: ["quotation_id"]
+            isOneToOne: false
+            referencedRelation: "quotations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotation_requests: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          hotel_id: string
+          id: string
+          notes: string | null
+          purchase_request_id: string | null
+          rfq_number: string
+          status: string | null
+          supplier_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          hotel_id: string
+          id?: string
+          notes?: string | null
+          purchase_request_id?: string | null
+          rfq_number?: string
+          status?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          hotel_id?: string
+          id?: string
+          notes?: string | null
+          purchase_request_id?: string | null
+          rfq_number?: string
+          status?: string | null
+          supplier_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotation_requests_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_requests_purchase_request_id_fkey"
+            columns: ["purchase_request_id"]
+            isOneToOne: false
+            referencedRelation: "purchase_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotation_requests_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      quotations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          delivery_days: number | null
+          hotel_id: string
+          id: string
+          notes: string | null
+          payment_terms: string | null
+          quotation_number: string
+          rfq_id: string | null
+          status: string | null
+          supplier_id: string
+          total_amount: number | null
+          updated_at: string
+          valid_until: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          delivery_days?: number | null
+          hotel_id: string
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          quotation_number?: string
+          rfq_id?: string | null
+          status?: string | null
+          supplier_id: string
+          total_amount?: number | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          delivery_days?: number | null
+          hotel_id?: string
+          id?: string
+          notes?: string | null
+          payment_terms?: string | null
+          quotation_number?: string
+          rfq_id?: string | null
+          status?: string | null
+          supplier_id?: string
+          total_amount?: number | null
+          updated_at?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quotations_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_rfq_id_fkey"
+            columns: ["rfq_id"]
+            isOneToOne: false
+            referencedRelation: "quotation_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quotations_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       restaurant_order_items: {
         Row: {
           created_at: string
@@ -1352,6 +1984,77 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "staff_shifts_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          category: string | null
+          city: string | null
+          contact_person: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          gst_number: string | null
+          hotel_id: string
+          id: string
+          is_active: boolean | null
+          name: string
+          notes: string | null
+          payment_terms: string | null
+          phone: string | null
+          rating: number | null
+          state: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          gst_number?: string | null
+          hotel_id: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          category?: string | null
+          city?: string | null
+          contact_person?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          gst_number?: string | null
+          hotel_id?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          notes?: string | null
+          payment_terms?: string | null
+          phone?: string | null
+          rating?: number | null
+          state?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suppliers_hotel_id_fkey"
             columns: ["hotel_id"]
             isOneToOne: false
             referencedRelation: "hotels"
