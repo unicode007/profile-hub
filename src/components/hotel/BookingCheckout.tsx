@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Hotel, RoomType, RoomPlan } from "./types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,8 +31,33 @@ import {
   Mail,
   User,
   AlertCircle,
+  QrCode,
+  Upload,
+  Landmark,
 } from "lucide-react";
 import { format, addDays, differenceInDays } from "date-fns";
+
+const generateDemoQrMatrix = (seed: string, size = 21) => {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i += 1) {
+    hash = (hash * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+
+  return Array.from({ length: size }, (_, row) =>
+    Array.from({ length: size }, (_, col) => {
+      const finderTopLeft = row < 7 && col < 7;
+      const finderTopRight = row < 7 && col >= size - 7;
+      const finderBottomLeft = row >= size - 7 && col < 7;
+      if (finderTopLeft || finderTopRight || finderBottomLeft) {
+        const localRow = row % 7;
+        const localCol = col % 7;
+        return localRow === 0 || localRow === 6 || localCol === 0 || localCol === 6 || (localRow >= 2 && localRow <= 4 && localCol >= 2 && localCol <= 4);
+      }
+      const mix = (hash ^ (row * 1973) ^ (col * 9277) ^ ((row + col) * 26699)) >>> 0;
+      return (mix & 1) === 1;
+    })
+  );
+};
 
 interface BookingCheckoutProps {
   hotel: Hotel;
@@ -59,6 +84,11 @@ export interface BookingDetails {
   rooms: number;
   specialRequests: string;
   paymentMethod: string;
+  paymentProof?: {
+    referenceId?: string;
+    screenshotName?: string;
+    hotelUpiId?: string;
+  };
   termsAccepted: boolean;
 }
 
@@ -90,6 +120,10 @@ export const BookingCheckout = ({
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [specialRequests, setSpecialRequests] = useState("");
+  const [manualPaymentId, setManualPaymentId] = useState("");
+  const [paymentScreenshot, setPaymentScreenshot] = useState<File | null>(null);
+  const [paymentPreviewUrl, setPaymentPreviewUrl] = useState("");
+  const [paymentProofSubmitted, setPaymentProofSubmitted] = useState(false);
   
   const [guestInfo, setGuestInfo] = useState({
     firstName: "",
@@ -105,6 +139,23 @@ export const BookingCheckout = ({
   const roomTotal = plan.discountedPrice * nights * rooms;
   const taxesTotal = plan.taxesAndFees * nights * rooms;
   const grandTotal = roomTotal + taxesTotal;
+  const hotelUpiId = `${hotel.name.toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 12)}.${hotel.id.slice(-4)}@upi`;
+  const upiQrPayload = `upi://pay?pa=${hotelUpiId}&pn=${encodeURIComponent(
+    hotel.name
+  )}&am=${grandTotal}&tn=HotelBooking-${hotel.id.slice(-4)}-${checkIn.getTime().toString().slice(-6)}`;
+  const demoQrMatrix = generateDemoQrMatrix(upiQrPayload);
+
+  useEffect(() => {
+    if (!paymentScreenshot) {
+      setPaymentPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(paymentScreenshot);
+    setPaymentPreviewUrl(objectUrl);
+
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [paymentScreenshot]);
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
@@ -116,6 +167,9 @@ export const BookingCheckout = ({
     if (!guestInfo.phone.trim()) newErrors.phone = "Phone number is required";
     else if (!/^\d{10}$/.test(guestInfo.phone.replace(/\D/g, ''))) newErrors.phone = "Invalid phone number";
     if (!termsAccepted) newErrors.terms = "You must accept the terms";
+    if ((paymentMethod === "upi" || paymentMethod === "payathotel") && !manualPaymentId.trim() && !paymentScreenshot) {
+      newErrors.paymentProof = "Add payment ID or upload payment screenshot";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -131,6 +185,11 @@ export const BookingCheckout = ({
         rooms,
         specialRequests,
         paymentMethod,
+        paymentProof: {
+          referenceId: manualPaymentId.trim() || undefined,
+          screenshotName: paymentScreenshot?.name,
+          hotelUpiId: paymentMethod === "upi" || paymentMethod === "payathotel" ? hotelUpiId : undefined,
+        },
         termsAccepted,
       });
     }
@@ -462,6 +521,130 @@ export const BookingCheckout = ({
                     </Label>
                   </div>
                 </RadioGroup>
+
+                {(paymentMethod === "upi" || paymentMethod === "payathotel") && (
+                  <div className="mt-5 space-y-4 rounded-xl border border-primary/30 bg-primary/5 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">
+                          {paymentMethod === "payathotel" ? "Pay at Hotel - UPI/Cash Verification" : "UPI Scan & Pay"}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Hotel generates a unique UPI ID and QR for this booking.
+                        </p>
+                      </div>
+                      <Badge variant="secondary" className="gap-1">
+                        <QrCode className="h-3.5 w-3.5" />
+                        Unique QR
+                      </Badge>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-[180px_1fr]">
+                      <div className="rounded-lg border bg-background p-3">
+                        <div className="rounded-md bg-white p-2 shadow-sm">
+                          <div
+                            className="grid gap-[1px]"
+                            style={{ gridTemplateColumns: "repeat(21, minmax(0, 1fr))" }}
+                          >
+                            {demoQrMatrix.flatMap((row, rowIndex) =>
+                              row.map((cell, colIndex) => (
+                                <span
+                                  key={`${rowIndex}-${colIndex}`}
+                                  className={`h-[6px] w-[6px] ${cell ? "bg-black" : "bg-white"}`}
+                                />
+                              ))
+                            )}
+                          </div>
+                        </div>
+                        <p className="mt-2 text-[11px] text-center text-muted-foreground">Demo QR preview</p>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="rounded-lg border bg-background p-3">
+                          <p className="text-xs text-muted-foreground mb-1">Hotel UPI ID</p>
+                          <p className="font-mono text-sm break-all">{hotelUpiId}</p>
+                        </div>
+                        <div className="rounded-lg border bg-background p-3">
+                          <p className="text-xs text-muted-foreground mb-1">Amount to pay</p>
+                          <p className="text-lg font-semibold text-primary">₹{grandTotal.toLocaleString()}</p>
+                        </div>
+                        {paymentMethod === "payathotel" && (
+                          <div className="flex items-center gap-2 text-sm rounded-lg border bg-background p-3">
+                            <Landmark className="h-4 w-4 text-amber-600" />
+                            <span>You can also pay cash at hotel and enter cash receipt ID below.</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <Label htmlFor="payment-id">Transaction / Cash Receipt ID</Label>
+                        <Input
+                          id="payment-id"
+                          placeholder="e.g. UPI123456789 or CASH-RECEIPT-001"
+                          value={manualPaymentId}
+                          onChange={(e) => {
+                            setManualPaymentId(e.target.value);
+                            setPaymentProofSubmitted(false);
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="payment-screenshot">Upload payment screenshot</Label>
+                        <div className="relative">
+                          <Input
+                            id="payment-screenshot"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              setPaymentScreenshot(e.target.files?.[0] || null);
+                              setPaymentProofSubmitted(false);
+                            }}
+                            className="file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1 file:text-xs file:font-medium"
+                          />
+                          <Upload className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                        </div>
+                        {paymentScreenshot && (
+                          <p className="mt-1 text-xs text-muted-foreground">Selected: {paymentScreenshot.name}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {paymentPreviewUrl && (
+                      <div className="rounded-lg border bg-background p-3">
+                        <p className="text-xs text-muted-foreground mb-2">Payment screenshot preview</p>
+                        <img
+                          src={paymentPreviewUrl}
+                          alt="Payment screenshot preview"
+                          className="max-h-44 w-auto rounded-md border object-contain"
+                        />
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => setPaymentProofSubmitted(true)}
+                        disabled={!manualPaymentId.trim() && !paymentScreenshot}
+                      >
+                        Submit Payment Proof
+                      </Button>
+                      {paymentProofSubmitted && (
+                        <span className="text-xs font-medium text-green-600">
+                          Payment proof submitted for review.
+                        </span>
+                      )}
+                    </div>
+
+                    {errors.paymentProof && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" /> {errors.paymentProof}
+                      </p>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
