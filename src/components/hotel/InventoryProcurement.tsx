@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { ColumnDef } from "@tanstack/react-table";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { DataTable } from "@/components/ui/data-table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -483,42 +485,51 @@ export const InventoryProcurement = () => {
     </div>
   );
 
-  // ============ ITEMS ============
+  // ============ ITEMS COLUMNS ============
+  const itemColumns: ColumnDef<InventoryItem, any>[] = useMemo(() => [
+    { accessorKey: "name", header: "Item / Brand", cell: ({ row }) => (<div><p className="font-medium text-sm">{row.original.name}</p><p className="text-xs text-muted-foreground">{row.original.brand}{row.original.is_perishable && <Badge variant="outline" className="ml-1 text-[10px] px-1">Perishable</Badge>}</p></div>), size: 200 },
+    { accessorKey: "sku", header: "SKU / Barcode", cell: ({ row }) => (<div><p className="text-xs font-mono">{row.original.sku}</p>{row.original.barcode && <p className="text-[10px] text-muted-foreground">{row.original.barcode}</p>}</div>) },
+    { accessorKey: "category", header: "Category", cell: ({ row }) => (<div><Badge variant="secondary" className="text-xs">{row.original.category}</Badge>{row.original.sub_category && <p className="text-[10px] text-muted-foreground mt-0.5">{row.original.sub_category}</p>}</div>) },
+    { accessorKey: "current_stock", header: "Stock", cell: ({ row }) => (<Badge variant={row.original.current_stock <= row.original.min_stock ? "destructive" : row.original.current_stock <= row.original.reorder_level ? "outline" : "default"}>{row.original.current_stock} {row.original.unit}</Badge>), meta: { align: "center" as const } },
+    { accessorKey: "reorder_level", header: "Reorder", meta: { align: "center" as const } },
+    { accessorKey: "unit_cost", header: "Unit Cost", cell: ({ row }) => `₹${row.original.unit_cost}`, meta: { align: "right" as const } },
+    { id: "value", header: "Value", accessorFn: (row: InventoryItem) => row.current_stock * row.unit_cost, cell: ({ getValue }) => <span className="font-medium">₹{(getValue() as number).toLocaleString()}</span>, meta: { align: "right" as const } },
+    { accessorKey: "location", header: "Location", cell: ({ row }) => (<span className="text-xs">{row.original.location}<br/><span className="text-muted-foreground">{row.original.shelf_number}</span></span>) },
+    { accessorKey: "supplier", header: "Supplier", size: 120 },
+    { accessorKey: "lead_time_days", header: "Lead", cell: ({ row }) => `${row.original.lead_time_days}d`, size: 60 },
+  ], []);
+
   const renderItems = () => (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 flex-1 w-full sm:w-auto">
-          <div className="relative flex-1 max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by name, SKU, barcode..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
-          <Select value={filterCategory} onValueChange={setFilterCategory}><SelectTrigger className="w-[180px]"><Filter className="h-4 w-4 mr-1" /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Categories</SelectItem>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <h3 className="text-lg font-semibold">Inventory Items ({items.length})</h3>
         <Button onClick={() => { setFormItem({}); setItemModal({ open: true }); }}><Plus className="h-4 w-4 mr-1" /> Add Item</Button>
       </div>
-      <Card><CardContent className="p-0"><ScrollArea className="w-full"><Table>
-        <TableHeader><TableRow><TableHead>Item / Brand</TableHead><TableHead>SKU / Barcode</TableHead><TableHead>Category</TableHead><TableHead>Stock</TableHead><TableHead>Reorder</TableHead><TableHead>Unit Cost</TableHead><TableHead>Value</TableHead><TableHead>Location</TableHead><TableHead>Supplier</TableHead><TableHead>Lead</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{filteredItems.map(item => (
-          <TableRow key={item.id}>
-            <TableCell><p className="font-medium text-sm">{item.name}</p><p className="text-xs text-muted-foreground">{item.brand}{item.is_perishable && <Badge variant="outline" className="ml-1 text-[10px] px-1">Perishable</Badge>}</p></TableCell>
-            <TableCell><p className="text-xs font-mono">{item.sku}</p>{item.barcode && <p className="text-[10px] text-muted-foreground">{item.barcode}</p>}</TableCell>
-            <TableCell><Badge variant="secondary" className="text-xs">{item.category}</Badge>{item.sub_category && <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub_category}</p>}</TableCell>
-            <TableCell><Badge variant={item.current_stock <= item.min_stock ? "destructive" : item.current_stock <= item.reorder_level ? "outline" : "default"}>{item.current_stock} {item.unit}</Badge></TableCell>
-            <TableCell className="text-xs">{item.reorder_level}</TableCell>
-            <TableCell className="text-sm">₹{item.unit_cost}</TableCell>
-            <TableCell className="font-medium text-sm">₹{(item.current_stock * item.unit_cost).toLocaleString()}</TableCell>
-            <TableCell className="text-xs">{item.location}<br/><span className="text-muted-foreground">{item.shelf_number}</span></TableCell>
-            <TableCell className="text-xs max-w-[100px] truncate">{item.supplier}</TableCell>
-            <TableCell className="text-xs">{item.lead_time_days}d</TableCell>
-            <TableCell>
-              <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setViewModal({ open: true, type: "item", data: item })}><Eye className="h-4 w-4 mr-2" /> View Details</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setFormItem(item); setItemModal({ open: true, editing: item }); }}><Edit className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setStockAdjustModal({ open: true, item }); setAdjustQty(0); setAdjustReason(""); }}><ArrowUpDown className="h-4 w-4 mr-2" /> Adjust Stock</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}</TableBody></Table></ScrollArea></CardContent></Card>
+      <DataTable
+        columns={itemColumns}
+        data={items}
+        enableRowSelection
+        enableExport
+        enableRefresh
+        enableDensityToggle
+        enableColumnResizing
+        enableFullscreen
+        striped
+        stickyHeader
+        maxHeight="65vh"
+        pagination={{ position: "both", pageSizes: [10, 20, 50, 100], defaultPageSize: 20 }}
+        getRowId={(row) => row.id}
+        actions={[
+          { id: "view", label: "View", icon: <Eye className="h-4 w-4" />, onClick: (row) => setViewModal({ open: true, type: "item", data: row }) },
+          { id: "edit", label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: (row) => { setFormItem(row); setItemModal({ open: true, editing: row }); } },
+          { id: "adjust", label: "Adjust Stock", icon: <ArrowUpDown className="h-4 w-4" />, onClick: (row) => { setStockAdjustModal({ open: true, item: row }); setAdjustQty(0); setAdjustReason(""); } },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", separator: true, onClick: (row) => handleDeleteItem(row.id) },
+        ]}
+        bulkActions={[
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-3.5 w-3.5" />, variant: "destructive", confirmMessage: "Are you sure you want to delete {count} selected items? This action cannot be undone.", onClick: (rows) => { rows.forEach(r => handleDeleteItem(r.id)); } },
+        ]}
+        onRefresh={() => toast.success("Items refreshed")}
+      />
     </div>
   );
 
@@ -539,58 +550,55 @@ export const InventoryProcurement = () => {
   );
 
   // ============ STOCK TRANSACTIONS ============
+  // ============ TRANSACTIONS COLUMNS ============
+  const txnColumns: ColumnDef<StockTransaction, any>[] = useMemo(() => [
+    { accessorKey: "transaction_type", header: "Type", cell: ({ row }) => (<div className="flex items-center gap-2">{getTxnIcon(row.original.transaction_type)}<span className="capitalize text-sm">{row.original.transaction_type}</span></div>) },
+    { accessorKey: "item_name", header: "Item" },
+    { accessorKey: "quantity", header: "Qty", cell: ({ row }) => (<Badge variant={row.original.quantity > 0 ? "default" : "destructive"}>{row.original.quantity > 0 ? "+" : ""}{row.original.quantity} {row.original.unit}</Badge>) },
+    { id: "before_after", header: "Before → After", cell: ({ row }) => `${row.original.before_qty} → ${row.original.after_qty}` },
+    { accessorKey: "reference_type", header: "Reference", cell: ({ row }) => (<div><p className="text-xs">{row.original.reference_type}</p><p className="text-[10px] text-muted-foreground">{row.original.reference_number}</p></div>) },
+    { accessorKey: "performed_by", header: "Performed By" },
+    { accessorKey: "created_at", header: "Date", cell: ({ row }) => format(new Date(row.original.created_at), "dd MMM yyyy HH:mm") },
+    { accessorKey: "notes", header: "Notes", size: 150 },
+  ], []);
+
   const renderTransactions = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center"><h3 className="text-lg font-semibold">Stock Transactions</h3><Badge variant="outline">{transactions.length} records</Badge></div>
-      <Card><CardContent className="p-0"><Table>
-        <TableHeader><TableRow><TableHead>Type</TableHead><TableHead>Item</TableHead><TableHead>Qty</TableHead><TableHead>Before → After</TableHead><TableHead>Reference</TableHead><TableHead>Performed By</TableHead><TableHead>Date</TableHead><TableHead>Notes</TableHead></TableRow></TableHeader>
-        <TableBody>{transactions.map(txn => (
-          <TableRow key={txn.id}>
-            <TableCell className="flex items-center gap-2">{getTxnIcon(txn.transaction_type)}<span className="capitalize text-sm">{txn.transaction_type}</span></TableCell>
-            <TableCell className="font-medium text-sm">{txn.item_name}</TableCell>
-            <TableCell><Badge variant={txn.quantity > 0 ? "default" : "destructive"}>{txn.quantity > 0 ? "+" : ""}{txn.quantity} {txn.unit}</Badge></TableCell>
-            <TableCell className="text-sm">{txn.before_qty} → {txn.after_qty}</TableCell>
-            <TableCell className="text-xs"><p>{txn.reference_type}</p><p className="text-muted-foreground">{txn.reference_number}</p></TableCell>
-            <TableCell className="text-xs">{txn.performed_by}</TableCell>
-            <TableCell className="text-xs">{format(new Date(txn.created_at), "dd MMM yyyy HH:mm")}</TableCell>
-            <TableCell className="text-xs max-w-[150px] truncate">{txn.notes}</TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+      <h3 className="text-lg font-semibold">Stock Transactions</h3>
+      <DataTable columns={txnColumns} data={transactions} enableExport enableRefresh onRefresh={() => toast.success("Refreshed")} striped pagination={{ defaultPageSize: 20 }} getRowId={(r) => r.id} />
     </div>
   );
 
-  // ============ WASTAGE ============
+  // ============ WASTAGE COLUMNS ============
+  const wastageColumns: ColumnDef<WastageRecord, any>[] = useMemo(() => [
+    { accessorKey: "item_name", header: "Item" },
+    { id: "qty", header: "Qty", cell: ({ row }) => `${row.original.quantity} ${row.original.unit}` },
+    { accessorKey: "wastage_type", header: "Type", cell: ({ row }) => <Badge variant="secondary" className="capitalize">{row.original.wastage_type}</Badge> },
+    { accessorKey: "reason", header: "Reason", size: 150 },
+    { accessorKey: "cost", header: "Cost", cell: ({ row }) => <span className="font-medium text-destructive">₹{row.original.cost.toLocaleString()}</span>, meta: { align: "right" as const } },
+    { accessorKey: "reported_by", header: "Reported By" },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={row.original.status === "approved" ? "default" : row.original.status === "pending" ? "outline" : "destructive"} className="capitalize">{row.original.status}</Badge> },
+    { accessorKey: "created_at", header: "Date", cell: ({ row }) => format(new Date(row.original.created_at), "dd MMM yyyy") },
+  ], []);
+
   const renderWastage = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center"><h3 className="text-lg font-semibold">Wastage & Loss Tracking</h3><Button onClick={() => { setFormWastage({}); setWastageModal({ open: true }); }}><Plus className="h-4 w-4 mr-1" /> Report Wastage</Button></div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Wastage Cost</p><p className="text-2xl font-bold text-orange-600">₹{totalWastageCost.toLocaleString()}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Wastage Cost</p><p className="text-2xl font-bold text-destructive">₹{totalWastageCost.toLocaleString()}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Pending Approval</p><p className="text-2xl font-bold">{wastageRecords.filter(w => w.status === "pending").length}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">This Month Records</p><p className="text-2xl font-bold">{wastageRecords.length}</p></CardContent></Card>
       </div>
-      <Card><CardContent className="p-0"><Table>
-        <TableHeader><TableRow><TableHead>Item</TableHead><TableHead>Qty</TableHead><TableHead>Type</TableHead><TableHead>Reason</TableHead><TableHead>Cost</TableHead><TableHead>Reported By</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{wastageRecords.map(w => (
-          <TableRow key={w.id}>
-            <TableCell className="font-medium">{w.item_name}</TableCell>
-            <TableCell>{w.quantity} {w.unit}</TableCell>
-            <TableCell><Badge variant="secondary" className="capitalize">{w.wastage_type}</Badge></TableCell>
-            <TableCell className="text-sm max-w-[150px] truncate">{w.reason}</TableCell>
-            <TableCell className="font-medium text-destructive">₹{w.cost.toLocaleString()}</TableCell>
-            <TableCell className="text-xs">{w.reported_by}</TableCell>
-            <TableCell><Badge variant={w.status === "approved" ? "default" : w.status === "pending" ? "outline" : "destructive"} className="capitalize">{w.status}</Badge></TableCell>
-            <TableCell className="text-xs">{format(new Date(w.created_at), "dd MMM yyyy")}</TableCell>
-            <TableCell>
-              <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {w.status === "pending" && <DropdownMenuItem onClick={() => handleApproveWastage(w.id)}><CheckCircle className="h-4 w-4 mr-2" /> Approve</DropdownMenuItem>}
-                  <DropdownMenuItem onClick={() => { setFormWastage(w); setWastageModal({ open: true, editing: w }); }}><Edit className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDeleteWastage(w.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+      <DataTable
+        columns={wastageColumns} data={wastageRecords} enableRowSelection striped
+        getRowId={(r) => r.id}
+        actions={[
+          { id: "approve", label: "Approve", icon: <CheckCircle className="h-4 w-4" />, onClick: (row) => handleApproveWastage(row.id), hidden: (row) => row.status !== "pending" },
+          { id: "edit", label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: (row) => { setFormWastage(row); setWastageModal({ open: true, editing: row }); } },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", onClick: (row) => handleDeleteWastage(row.id) },
+        ]}
+        bulkActions={[{ id: "delete", label: "Delete", variant: "destructive", confirmMessage: "Delete {count} wastage records?", onClick: (rows) => rows.forEach(r => handleDeleteWastage(r.id)) }]}
+      />
     </div>
   );
 
@@ -617,74 +625,111 @@ export const InventoryProcurement = () => {
     </div>
   );
 
-  // ============ PURCHASE REQUESTS ============
+  // ============ PR COLUMNS ============
+  const prColumns: ColumnDef<PurchaseRequest, any>[] = useMemo(() => [
+    { accessorKey: "request_number", header: "PR #" },
+    { accessorKey: "department", header: "Department", cell: ({ row }) => <span className="capitalize">{row.original.department}</span> },
+    { id: "item_count", header: "Items", cell: ({ row }) => `${row.original.items.length} items` },
+    { id: "est_cost", header: "Est. Cost", cell: ({ row }) => <span className="font-medium">₹{row.original.items.reduce((s, i) => s + i.estimated_cost, 0).toLocaleString()}</span>, meta: { align: "right" as const } },
+    { accessorKey: "priority", header: "Priority", cell: ({ row }) => <Badge variant={getPriorityColor(row.original.priority)} className="capitalize">{row.original.priority}</Badge> },
+    { accessorKey: "required_date", header: "Required" },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={getStatusColor(row.original.status)} className="capitalize">{row.original.status}</Badge> },
+    { accessorKey: "created_at", header: "Date", cell: ({ row }) => row.original.created_at?.split("T")[0] },
+  ], []);
+
   const renderPurchaseRequests = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center"><h3 className="text-lg font-semibold">Purchase Requests</h3><Button onClick={() => { setFormPR({ items: [] }); setPrModal({ open: true }); }}><Plus className="h-4 w-4 mr-1" /> New Request</Button></div>
-      <Card><CardContent className="p-0"><Table>
-        <TableHeader><TableRow><TableHead>PR #</TableHead><TableHead>Department</TableHead><TableHead>Items</TableHead><TableHead>Est. Cost</TableHead><TableHead>Priority</TableHead><TableHead>Required</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{purchaseRequests.map(pr => (
-          <TableRow key={pr.id}>
-            <TableCell className="font-medium">{pr.request_number}</TableCell><TableCell className="capitalize">{pr.department}</TableCell><TableCell>{pr.items.length} items</TableCell>
-            <TableCell className="font-medium">₹{pr.items.reduce((s, i) => s + i.estimated_cost, 0).toLocaleString()}</TableCell>
-            <TableCell><Badge variant={getPriorityColor(pr.priority)} className="capitalize">{pr.priority}</Badge></TableCell><TableCell className="text-xs">{pr.required_date}</TableCell><TableCell><Badge variant={getStatusColor(pr.status)} className="capitalize">{pr.status}</Badge></TableCell><TableCell className="text-xs">{pr.created_at?.split("T")[0]}</TableCell>
-            <TableCell><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setViewModal({ open: true, type: "pr", data: pr })}><Eye className="h-4 w-4 mr-2" /> View</DropdownMenuItem>{pr.status === "pending" && <DropdownMenuItem onClick={() => handleApprovePR(pr.id)}><CheckCircle className="h-4 w-4 mr-2" /> Approve</DropdownMenuItem>}<DropdownMenuItem onClick={() => { setFormPR(pr); setPrModal({ open: true, editing: pr }); }}><Edit className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDeletePR(pr.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem></DropdownMenuContent>
-            </DropdownMenu></TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+      <DataTable columns={prColumns} data={purchaseRequests} enableRowSelection enableExport striped getRowId={(r) => r.id}
+        actions={[
+          { id: "view", label: "View", icon: <Eye className="h-4 w-4" />, onClick: (row) => setViewModal({ open: true, type: "pr", data: row }) },
+          { id: "approve", label: "Approve", icon: <CheckCircle className="h-4 w-4" />, onClick: (row) => handleApprovePR(row.id), hidden: (row) => row.status !== "pending" },
+          { id: "edit", label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: (row) => { setFormPR(row); setPrModal({ open: true, editing: row }); } },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", separator: true, onClick: (row) => handleDeletePR(row.id) },
+        ]}
+        bulkActions={[{ id: "delete", label: "Delete", variant: "destructive", confirmMessage: "Delete {count} purchase requests?", onClick: (rows) => rows.forEach(r => handleDeletePR(r.id)) }]}
+      />
     </div>
   );
 
-  // ============ QUOTATIONS ============
+  // ============ QUOTATION COLUMNS ============
+  const qtColumns: ColumnDef<Quotation, any>[] = useMemo(() => [
+    { accessorKey: "quotation_number", header: "QT #" },
+    { accessorKey: "supplier_name", header: "Supplier" },
+    { id: "item_count", header: "Items", cell: ({ row }) => `${row.original.items.length} items` },
+    { accessorKey: "total_amount", header: "Total", cell: ({ row }) => <span className="font-medium">₹{row.original.total_amount.toLocaleString()}</span>, meta: { align: "right" as const } },
+    { accessorKey: "valid_until", header: "Valid Until" },
+    { accessorKey: "delivery_days", header: "Delivery", cell: ({ row }) => `${row.original.delivery_days} days` },
+    { accessorKey: "payment_terms", header: "Terms" },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={getStatusColor(row.original.status)} className="capitalize">{row.original.status}</Badge> },
+  ], []);
+
   const renderQuotations = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center"><h3 className="text-lg font-semibold">Quotations</h3><Button onClick={() => { setFormQT({ items: [] }); setQtModal({ open: true }); }}><Plus className="h-4 w-4 mr-1" /> Add Quotation</Button></div>
-      <Card><CardContent className="p-0"><Table>
-        <TableHeader><TableRow><TableHead>QT #</TableHead><TableHead>Supplier</TableHead><TableHead>Items</TableHead><TableHead>Total</TableHead><TableHead>Valid Until</TableHead><TableHead>Delivery</TableHead><TableHead>Terms</TableHead><TableHead>Status</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{quotations.map(qt => (
-          <TableRow key={qt.id}><TableCell className="font-medium">{qt.quotation_number}</TableCell><TableCell>{qt.supplier_name}</TableCell><TableCell>{qt.items.length} items</TableCell><TableCell className="font-medium">₹{qt.total_amount.toLocaleString()}</TableCell><TableCell className="text-xs">{qt.valid_until}</TableCell><TableCell>{qt.delivery_days} days</TableCell><TableCell className="text-xs">{qt.payment_terms}</TableCell><TableCell><Badge variant={getStatusColor(qt.status)} className="capitalize">{qt.status}</Badge></TableCell>
-            <TableCell><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setViewModal({ open: true, type: "qt", data: qt })}><Eye className="h-4 w-4 mr-2" /> View</DropdownMenuItem>{qt.status !== "converted" && <DropdownMenuItem onClick={() => handleConvertQTtoPO(qt)}><ArrowRight className="h-4 w-4 mr-2" /> Convert to PO</DropdownMenuItem>}<DropdownMenuItem onClick={() => { setFormQT(qt); setQtModal({ open: true, editing: qt }); }}><Edit className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDeleteQT(qt.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem></DropdownMenuContent>
-            </DropdownMenu></TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+      <DataTable columns={qtColumns} data={quotations} enableRowSelection enableExport striped getRowId={(r) => r.id}
+        actions={[
+          { id: "view", label: "View", icon: <Eye className="h-4 w-4" />, onClick: (row) => setViewModal({ open: true, type: "qt", data: row }) },
+          { id: "convert", label: "Convert to PO", icon: <ArrowRight className="h-4 w-4" />, onClick: (row) => handleConvertQTtoPO(row), hidden: (row) => row.status === "converted" },
+          { id: "edit", label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: (row) => { setFormQT(row); setQtModal({ open: true, editing: row }); } },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", separator: true, onClick: (row) => handleDeleteQT(row.id) },
+        ]}
+      />
     </div>
   );
 
-  // ============ PURCHASE ORDERS ============
+  // ============ PO COLUMNS ============
+  const poColumns: ColumnDef<PurchaseOrder, any>[] = useMemo(() => [
+    { accessorKey: "po_number", header: "PO #" },
+    { accessorKey: "supplier_name", header: "Supplier" },
+    { id: "item_count", header: "Items", cell: ({ row }) => `${row.original.items.length} items` },
+    { accessorKey: "total_amount", header: "Grand Total", cell: ({ row }) => <span className="font-medium">₹{row.original.total_amount.toLocaleString()}</span>, meta: { align: "right" as const } },
+    { accessorKey: "expected_delivery", header: "Delivery" },
+    { accessorKey: "payment_terms", header: "Terms" },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={getStatusColor(row.original.status)} className="capitalize">{row.original.status.replace("_", " ")}</Badge> },
+    { accessorKey: "created_at", header: "Date", cell: ({ row }) => row.original.created_at?.split("T")[0] },
+  ], []);
+
   const renderPurchaseOrders = () => (
     <div className="space-y-4">
       <div className="flex justify-between items-center"><h3 className="text-lg font-semibold">Purchase Orders</h3><Button onClick={() => { setFormPO({ items: [] }); setPoModal({ open: true }); }}><Plus className="h-4 w-4 mr-1" /> New PO</Button></div>
-      <Card><CardContent className="p-0"><Table>
-        <TableHeader><TableRow><TableHead>PO #</TableHead><TableHead>Supplier</TableHead><TableHead>Items</TableHead><TableHead>Total</TableHead><TableHead>Delivery</TableHead><TableHead>Terms</TableHead><TableHead>Status</TableHead><TableHead>Date</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{purchaseOrders.map(po => (
-          <TableRow key={po.id}><TableCell className="font-medium">{po.po_number}</TableCell><TableCell>{po.supplier_name}</TableCell><TableCell>{po.items.length} items</TableCell><TableCell className="font-medium">₹{po.total_amount.toLocaleString()}</TableCell><TableCell className="text-xs">{po.expected_delivery}</TableCell><TableCell className="text-xs">{po.payment_terms}</TableCell><TableCell><Badge variant={getStatusColor(po.status)} className="capitalize">{po.status.replace("_", " ")}</Badge></TableCell><TableCell className="text-xs">{po.created_at?.split("T")[0]}</TableCell>
-            <TableCell><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setViewModal({ open: true, type: "po", data: po })}><Eye className="h-4 w-4 mr-2" /> View</DropdownMenuItem>{(po.status === "sent" || po.status === "partially_received") && <DropdownMenuItem onClick={() => handleCreateGRN(po)}><Truck className="h-4 w-4 mr-2" /> Create GRN</DropdownMenuItem>}<DropdownMenuItem onClick={() => { setFormPO(po); setPoModal({ open: true, editing: po }); }}><Edit className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem><DropdownMenuItem onClick={() => handleDeletePO(po.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem></DropdownMenuContent>
-            </DropdownMenu></TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+      <DataTable columns={poColumns} data={purchaseOrders} enableRowSelection enableExport enableRefresh enableDensityToggle enableFullscreen striped
+        pagination={{ position: "both", pageSizes: [20, 100, 500, 2500], defaultPageSize: 20 }}
+        getRowId={(r) => r.id}
+        onRefresh={() => toast.success("Purchase orders refreshed")}
+        actions={[
+          { id: "view", label: "View", icon: <Eye className="h-4 w-4" />, onClick: (row) => setViewModal({ open: true, type: "po", data: row }) },
+          { id: "grn", label: "Create GRN", icon: <Truck className="h-4 w-4" />, onClick: (row) => handleCreateGRN(row), hidden: (row) => row.status !== "sent" && row.status !== "partially_received" },
+          { id: "edit", label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: (row) => { setFormPO(row); setPoModal({ open: true, editing: row }); } },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", separator: true, onClick: (row) => handleDeletePO(row.id) },
+        ]}
+        bulkActions={[{ id: "delete", label: "Delete", variant: "destructive", confirmMessage: "Are you sure you want to delete {count} purchase orders? This action cannot be undone.", onClick: (rows) => rows.forEach(r => handleDeletePO(r.id)) }]}
+      />
     </div>
   );
 
-  // ============ GRN ============
+  // ============ GRN COLUMNS ============
+  const grnColumns: ColumnDef<GoodsReceipt, any>[] = useMemo(() => [
+    { accessorKey: "grn_number", header: "GRN #" },
+    { accessorKey: "po_number", header: "PO #" },
+    { accessorKey: "supplier_name", header: "Supplier" },
+    { accessorKey: "invoice_number", header: "Invoice #", cell: ({ row }) => row.original.invoice_number || "-" },
+    { accessorKey: "received_by_name", header: "Received By" },
+    { accessorKey: "received_date", header: "Date" },
+    { accessorKey: "status", header: "Status", cell: ({ row }) => <Badge variant={getStatusColor(row.original.status)} className="capitalize">{row.original.status}</Badge> },
+  ], []);
+
   const renderGoodsReceipts = () => (
     <div className="space-y-4">
-      <div className="flex justify-between items-center"><h3 className="text-lg font-semibold">Goods Receipt Notes (GRN)</h3></div>
-      <Card><CardContent className="p-0"><Table>
-        <TableHeader><TableRow><TableHead>GRN #</TableHead><TableHead>PO #</TableHead><TableHead>Supplier</TableHead><TableHead>Invoice #</TableHead><TableHead>Received By</TableHead><TableHead>Date</TableHead><TableHead>Status</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{goodsReceipts.map(grn => (
-          <TableRow key={grn.id}><TableCell className="font-medium">{grn.grn_number}</TableCell><TableCell>{grn.po_number}</TableCell><TableCell>{grn.supplier_name}</TableCell><TableCell className="text-xs">{grn.invoice_number || "-"}</TableCell><TableCell>{grn.received_by_name}</TableCell><TableCell className="text-xs">{grn.received_date}</TableCell><TableCell><Badge variant={getStatusColor(grn.status)} className="capitalize">{grn.status}</Badge></TableCell>
-            <TableCell><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-              <DropdownMenuContent align="end"><DropdownMenuItem onClick={() => setViewModal({ open: true, type: "grn", data: grn })}><Eye className="h-4 w-4 mr-2" /> View</DropdownMenuItem><DropdownMenuItem onClick={() => handleDeleteGRN(grn.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem></DropdownMenuContent>
-            </DropdownMenu></TableCell>
-          </TableRow>
-        ))}</TableBody></Table></CardContent></Card>
+      <h3 className="text-lg font-semibold">Goods Receipt Notes (GRN)</h3>
+      <DataTable columns={grnColumns} data={goodsReceipts} enableRowSelection striped getRowId={(r) => r.id}
+        actions={[
+          { id: "view", label: "View", icon: <Eye className="h-4 w-4" />, onClick: (row) => setViewModal({ open: true, type: "grn", data: row }) },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", onClick: (row) => handleDeleteGRN(row.id) },
+        ]}
+      />
     </div>
   );
-
-  // ============ REPORTS ============
   const renderReports = () => {
     const categoryValues = CATEGORIES.map(c => {
       const ci = items.filter(i => i.category === c);
