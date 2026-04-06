@@ -485,42 +485,51 @@ export const InventoryProcurement = () => {
     </div>
   );
 
-  // ============ ITEMS ============
+  // ============ ITEMS COLUMNS ============
+  const itemColumns: ColumnDef<InventoryItem, any>[] = useMemo(() => [
+    { accessorKey: "name", header: "Item / Brand", cell: ({ row }) => (<div><p className="font-medium text-sm">{row.original.name}</p><p className="text-xs text-muted-foreground">{row.original.brand}{row.original.is_perishable && <Badge variant="outline" className="ml-1 text-[10px] px-1">Perishable</Badge>}</p></div>), size: 200 },
+    { accessorKey: "sku", header: "SKU / Barcode", cell: ({ row }) => (<div><p className="text-xs font-mono">{row.original.sku}</p>{row.original.barcode && <p className="text-[10px] text-muted-foreground">{row.original.barcode}</p>}</div>) },
+    { accessorKey: "category", header: "Category", cell: ({ row }) => (<div><Badge variant="secondary" className="text-xs">{row.original.category}</Badge>{row.original.sub_category && <p className="text-[10px] text-muted-foreground mt-0.5">{row.original.sub_category}</p>}</div>) },
+    { accessorKey: "current_stock", header: "Stock", cell: ({ row }) => (<Badge variant={row.original.current_stock <= row.original.min_stock ? "destructive" : row.original.current_stock <= row.original.reorder_level ? "outline" : "default"}>{row.original.current_stock} {row.original.unit}</Badge>), meta: { align: "center" as const } },
+    { accessorKey: "reorder_level", header: "Reorder", meta: { align: "center" as const } },
+    { accessorKey: "unit_cost", header: "Unit Cost", cell: ({ row }) => `₹${row.original.unit_cost}`, meta: { align: "right" as const } },
+    { id: "value", header: "Value", accessorFn: (row: InventoryItem) => row.current_stock * row.unit_cost, cell: ({ getValue }) => <span className="font-medium">₹{(getValue() as number).toLocaleString()}</span>, meta: { align: "right" as const } },
+    { accessorKey: "location", header: "Location", cell: ({ row }) => (<span className="text-xs">{row.original.location}<br/><span className="text-muted-foreground">{row.original.shelf_number}</span></span>) },
+    { accessorKey: "supplier", header: "Supplier", size: 120 },
+    { accessorKey: "lead_time_days", header: "Lead", cell: ({ row }) => `${row.original.lead_time_days}d`, size: 60 },
+  ], []);
+
   const renderItems = () => (
     <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex gap-2 flex-1 w-full sm:w-auto">
-          <div className="relative flex-1 max-w-sm"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input placeholder="Search by name, SKU, barcode..." className="pl-9" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
-          <Select value={filterCategory} onValueChange={setFilterCategory}><SelectTrigger className="w-[180px]"><Filter className="h-4 w-4 mr-1" /><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All Categories</SelectItem>{CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
-        </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+        <h3 className="text-lg font-semibold">Inventory Items ({items.length})</h3>
         <Button onClick={() => { setFormItem({}); setItemModal({ open: true }); }}><Plus className="h-4 w-4 mr-1" /> Add Item</Button>
       </div>
-      <Card><CardContent className="p-0"><ScrollArea className="w-full"><Table>
-        <TableHeader><TableRow><TableHead>Item / Brand</TableHead><TableHead>SKU / Barcode</TableHead><TableHead>Category</TableHead><TableHead>Stock</TableHead><TableHead>Reorder</TableHead><TableHead>Unit Cost</TableHead><TableHead>Value</TableHead><TableHead>Location</TableHead><TableHead>Supplier</TableHead><TableHead>Lead</TableHead><TableHead className="w-10"></TableHead></TableRow></TableHeader>
-        <TableBody>{filteredItems.map(item => (
-          <TableRow key={item.id}>
-            <TableCell><p className="font-medium text-sm">{item.name}</p><p className="text-xs text-muted-foreground">{item.brand}{item.is_perishable && <Badge variant="outline" className="ml-1 text-[10px] px-1">Perishable</Badge>}</p></TableCell>
-            <TableCell><p className="text-xs font-mono">{item.sku}</p>{item.barcode && <p className="text-[10px] text-muted-foreground">{item.barcode}</p>}</TableCell>
-            <TableCell><Badge variant="secondary" className="text-xs">{item.category}</Badge>{item.sub_category && <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub_category}</p>}</TableCell>
-            <TableCell><Badge variant={item.current_stock <= item.min_stock ? "destructive" : item.current_stock <= item.reorder_level ? "outline" : "default"}>{item.current_stock} {item.unit}</Badge></TableCell>
-            <TableCell className="text-xs">{item.reorder_level}</TableCell>
-            <TableCell className="text-sm">₹{item.unit_cost}</TableCell>
-            <TableCell className="font-medium text-sm">₹{(item.current_stock * item.unit_cost).toLocaleString()}</TableCell>
-            <TableCell className="text-xs">{item.location}<br/><span className="text-muted-foreground">{item.shelf_number}</span></TableCell>
-            <TableCell className="text-xs max-w-[100px] truncate">{item.supplier}</TableCell>
-            <TableCell className="text-xs">{item.lead_time_days}d</TableCell>
-            <TableCell>
-              <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => setViewModal({ open: true, type: "item", data: item })}><Eye className="h-4 w-4 mr-2" /> View Details</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setFormItem(item); setItemModal({ open: true, editing: item }); }}><Edit className="h-4 w-4 mr-2" /> Edit</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => { setStockAdjustModal({ open: true, item }); setAdjustQty(0); setAdjustReason(""); }}><ArrowUpDown className="h-4 w-4 mr-2" /> Adjust Stock</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleDeleteItem(item.id)} className="text-destructive"><Trash2 className="h-4 w-4 mr-2" /> Delete</DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}</TableBody></Table></ScrollArea></CardContent></Card>
+      <DataTable
+        columns={itemColumns}
+        data={items}
+        enableRowSelection
+        enableExport
+        enableRefresh
+        enableDensityToggle
+        enableColumnResizing
+        enableFullscreen
+        striped
+        stickyHeader
+        maxHeight="65vh"
+        pagination={{ position: "both", pageSizes: [10, 20, 50, 100], defaultPageSize: 20 }}
+        getRowId={(row) => row.id}
+        actions={[
+          { id: "view", label: "View", icon: <Eye className="h-4 w-4" />, onClick: (row) => setViewModal({ open: true, type: "item", data: row }) },
+          { id: "edit", label: "Edit", icon: <Edit className="h-4 w-4" />, onClick: (row) => { setFormItem(row); setItemModal({ open: true, editing: row }); } },
+          { id: "adjust", label: "Adjust Stock", icon: <ArrowUpDown className="h-4 w-4" />, onClick: (row) => { setStockAdjustModal({ open: true, item: row }); setAdjustQty(0); setAdjustReason(""); } },
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-4 w-4" />, variant: "destructive", separator: true, onClick: (row) => handleDeleteItem(row.id) },
+        ]}
+        bulkActions={[
+          { id: "delete", label: "Delete", icon: <Trash2 className="h-3.5 w-3.5" />, variant: "destructive", confirmMessage: "Are you sure you want to delete {count} selected items? This action cannot be undone.", onClick: (rows) => { rows.forEach(r => handleDeleteItem(r.id)); } },
+        ]}
+        onRefresh={() => toast.success("Items refreshed")}
+      />
     </div>
   );
 
