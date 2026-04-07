@@ -1,19 +1,20 @@
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { ReactNode } from "react";
 
-export type DataTableFilterType = "text" | "select" | "date" | "number";
+export type DataTableFilterType = "text" | "select" | "date" | "number" | "checkbox" | "dateRange";
 
 export interface DataTableFilterOption {
   label: string;
   value: string;
   icon?: ReactNode;
+  children?: DataTableFilterOption[]; // tree-select support
 }
 
 export interface DataTableColumnMeta {
   filterType?: DataTableFilterType;
   filterOptions?: DataTableFilterOption[];
   align?: "left" | "center" | "right";
-  sticky?: boolean;
+  sticky?: "left" | "right"; // sticky column
   hidden?: boolean;
   minWidth?: number;
   maxWidth?: number;
@@ -23,6 +24,11 @@ export interface DataTableColumnMeta {
   exportable?: boolean;
   exportLabel?: string;
   renderExport?: (value: any) => string;
+  truncate?: boolean; // enable text truncation with tooltip
+  truncateLength?: number; // max chars before truncation (default 40)
+  copyable?: boolean; // enable copy cell value
+  autoWidth?: boolean; // auto-adjust width to content
+  nowrap?: boolean; // prevent text wrapping
 }
 
 export interface DataTableAction<TData> {
@@ -53,6 +59,18 @@ export interface DataTablePaginationConfig {
   showGoToPage?: boolean;
 }
 
+export interface DataTableServerSideConfig {
+  enabled: boolean;
+  totalRows: number;
+  pageIndex: number;
+  pageSize: number;
+  onPaginationChange?: (pageIndex: number, pageSize: number) => void;
+  onSortingChange?: (sorting: { id: string; desc: boolean }[]) => void;
+  onFilterChange?: (filters: { id: string; value: any }[]) => void;
+  onGlobalFilterChange?: (value: string) => void;
+  debounceMs?: number; // debounce for search/filter (default 300)
+}
+
 export interface DataTableConfig<TData> {
   columns: ColumnDef<TData, any>[];
   data: TData[];
@@ -71,10 +89,13 @@ export interface DataTableConfig<TData> {
   enableFullscreen?: boolean;
   enableGrouping?: boolean;
   enablePinning?: boolean;
+  enableColumnDragDrop?: boolean; // drag and drop column reorder
+  enableCellCopy?: boolean; // global enable copy any cell
   // Config
   pagination?: DataTablePaginationConfig;
   actions?: DataTableAction<TData>[];
   bulkActions?: DataTableBulkAction<TData>[];
+  serverSide?: DataTableServerSideConfig;
   // Callbacks
   onRefresh?: () => void;
   onRowClick?: (row: TData) => void;
@@ -84,7 +105,10 @@ export interface DataTableConfig<TData> {
   description?: string;
   emptyMessage?: string;
   emptyIcon?: ReactNode;
+  emptyDescription?: string;
   loading?: boolean;
+  loadingStyle?: "skeleton" | "spinner" | "overlay"; // loading display type
+  loadingRows?: number; // number of skeleton rows (default 5)
   className?: string;
   headerClassName?: string;
   rowClassName?: string | ((row: TData, index: number) => string);

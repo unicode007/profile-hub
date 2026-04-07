@@ -9,4 +9,5 @@ export type {
   DataTableFilterOption,
   DataTableFilterType,
   DataTablePaginationConfig,
+  DataTableServerSideConfig,
 } from "./types";
