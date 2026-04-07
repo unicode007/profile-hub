@@ -99,7 +99,7 @@ function TruncatedCell({ value, maxLength = 40, copyable, enableGlobalCopy }: { 
           className="opacity-0 group-hover/cell:opacity-100 transition-opacity flex-shrink-0 p-0.5 rounded hover:bg-muted"
           title="Copy"
         >
-          {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
+          {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3 text-muted-foreground" />}
         </button>
       )}
     </div>
