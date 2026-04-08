@@ -99,13 +99,14 @@ export interface DataTableConfig<TData> {
   enableFullscreen?: boolean;
   enableGrouping?: boolean;
   enablePinning?: boolean;
-  enableColumnDragDrop?: boolean; // drag and drop column reorder
-  enableCellCopy?: boolean; // global enable copy any cell
+  enableColumnDragDrop?: boolean;
+  enableCellCopy?: boolean;
   // Config
   pagination?: DataTablePaginationConfig;
   actions?: DataTableAction<TData>[];
   bulkActions?: DataTableBulkAction<TData>[];
   serverSide?: DataTableServerSideConfig;
+  globalFilters?: DataTableGlobalFilterConfig[]; // advanced global filter panel
   // Callbacks
   onRefresh?: () => void;
   onRowClick?: (row: TData) => void;
@@ -117,8 +118,8 @@ export interface DataTableConfig<TData> {
   emptyIcon?: ReactNode;
   emptyDescription?: string;
   loading?: boolean;
-  loadingStyle?: "skeleton" | "spinner" | "overlay"; // loading display type
-  loadingRows?: number; // number of skeleton rows (default 5)
+  loadingStyle?: "skeleton" | "spinner" | "overlay";
+  loadingRows?: number;
   className?: string;
   headerClassName?: string;
   rowClassName?: string | ((row: TData, index: number) => string);
