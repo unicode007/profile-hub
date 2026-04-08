@@ -148,6 +148,7 @@ export function DataTable<TData extends Record<string, any>>({
   actions,
   bulkActions,
   serverSide,
+  globalFilters,
   onRefresh,
   onRowClick,
   onSelectionChange,
