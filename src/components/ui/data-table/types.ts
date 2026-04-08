@@ -1,13 +1,23 @@
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { ReactNode } from "react";
 
-export type DataTableFilterType = "text" | "select" | "date" | "number" | "checkbox" | "dateRange";
+export type DataTableFilterType = "text" | "select" | "date" | "number" | "checkbox" | "dateRange" | "treeSelect";
 
 export interface DataTableFilterOption {
   label: string;
   value: string;
   icon?: ReactNode;
   children?: DataTableFilterOption[]; // tree-select support
+}
+
+export interface DataTableGlobalFilterConfig {
+  id: string;
+  label: string;
+  type: DataTableFilterType;
+  options?: DataTableFilterOption[];
+  placeholder?: string;
+  defaultValue?: any;
+  columnId?: string; // maps to a column filter
 }
 
 export interface DataTableColumnMeta {
