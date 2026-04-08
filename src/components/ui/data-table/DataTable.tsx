@@ -667,6 +667,7 @@ export function DataTable<TData extends Record<string, any>>({
               )}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
 
