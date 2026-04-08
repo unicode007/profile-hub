@@ -55,6 +55,7 @@ import { cn } from "@/lib/utils";
 import { DataTableConfig, DataTableAction, DataTableColumnMeta } from "./types";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { DataTablePagination } from "./DataTablePagination";
+import { GlobalFilterPanel } from "./GlobalFilterPanel";
 import { toast } from "sonner";
 
 // Cell with truncation and tooltip
@@ -147,6 +148,7 @@ export function DataTable<TData extends Record<string, any>>({
   actions,
   bulkActions,
   serverSide,
+  globalFilters,
   onRefresh,
   onRowClick,
   onSelectionChange,
@@ -179,7 +181,35 @@ export function DataTable<TData extends Record<string, any>>({
   const [columnSizing, setColumnSizing] = useState({});
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [globalFilterValues, setGlobalFilterValues] = useState<Record<string, any>>(() => {
+    const defaults: Record<string, any> = {};
+    globalFilters?.forEach((f) => { if (f.defaultValue !== undefined) defaults[f.id] = f.defaultValue; });
+    return defaults;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle global filter panel changes - apply to column filters
+  const handleGlobalFilterChange = useCallback((id: string, value: any) => {
+    setGlobalFilterValues((prev) => ({ ...prev, [id]: value }));
+    const filterConfig = globalFilters?.find((f) => f.id === id);
+    if (filterConfig?.columnId) {
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterConfig.columnId);
+        if (value !== undefined && value !== "" && !(Array.isArray(value) && value.length === 0)) {
+          filtered.push({ id: filterConfig.columnId!, value });
+        }
+        return filtered;
+      });
+    }
+  }, [globalFilters]);
+
+  const handleResetGlobalFilters = useCallback(() => {
+    setGlobalFilterValues({});
+    if (globalFilters) {
+      const columnIds = globalFilters.filter((f) => f.columnId).map((f) => f.columnId!);
+      setColumnFilters((prev) => prev.filter((f) => !columnIds.includes(f.id)));
+    }
+  }, [globalFilters]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e: React.DragEvent, columnId: string) => {
@@ -435,18 +465,29 @@ export function DataTable<TData extends Record<string, any>>({
         setDensity={setDensity}
       />
 
+      {/* Global Filter Panel */}
+      {globalFilters && globalFilters.length > 0 && (
+        <GlobalFilterPanel
+          table={table}
+          filters={globalFilters}
+          filterValues={globalFilterValues}
+          onFilterChange={handleGlobalFilterChange}
+          onReset={handleResetGlobalFilters}
+        />
+      )}
+
       {/* Top pagination */}
       {enablePagination && (pagination?.position === "top" || pagination?.position === "both") && (
         <DataTablePagination table={table} config={pagination} serverSide={serverSide} />
       )}
 
-      {/* Table */}
+      {/* Table - fixed header, scrollable body only */}
       <div
         className={cn(
-          "rounded-lg border overflow-auto relative",
+          "rounded-lg border relative overflow-auto",
           bordered && "border-2",
         )}
-        style={maxHeight ? { maxHeight, overflowY: "auto" } : { maxHeight: "70vh", overflowY: "auto" }}
+        style={{ maxHeight: maxHeight || "70vh" }}
       >
         {/* Overlay spinner loading */}
         {loading && loadingStyle === "overlay" && (
@@ -465,8 +506,9 @@ export function DataTable<TData extends Record<string, any>>({
             <span className="text-sm text-muted-foreground">Loading data...</span>
           </div>
         ) : (
-          <Table>
-            <TableHeader className={cn(stickyHeader && "sticky top-0 z-20 bg-muted/95 backdrop-blur-sm", headerClassName)}>
+          <div className="overflow-x-auto">
+          <Table className="table-fixed w-full">
+            <TableHeader className={cn("sticky top-0 z-20 bg-muted/95 backdrop-blur-sm", headerClassName)}>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="hover:bg-transparent">
                   {hg.headers.map((header, colIndex) => {
@@ -626,6 +668,7 @@ export function DataTable<TData extends Record<string, any>>({
               )}
             </TableBody>
           </Table>
+          </div>
         )}
       </div>
 

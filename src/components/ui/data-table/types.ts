@@ -1,13 +1,23 @@
 import { ColumnDef, Row } from "@tanstack/react-table";
 import { ReactNode } from "react";
 
-export type DataTableFilterType = "text" | "select" | "date" | "number" | "checkbox" | "dateRange";
+export type DataTableFilterType = "text" | "select" | "date" | "number" | "checkbox" | "dateRange" | "treeSelect";
 
 export interface DataTableFilterOption {
   label: string;
   value: string;
   icon?: ReactNode;
   children?: DataTableFilterOption[]; // tree-select support
+}
+
+export interface DataTableGlobalFilterConfig {
+  id: string;
+  label: string;
+  type: DataTableFilterType;
+  options?: DataTableFilterOption[];
+  placeholder?: string;
+  defaultValue?: any;
+  columnId?: string; // maps to a column filter
 }
 
 export interface DataTableColumnMeta {
@@ -89,13 +99,14 @@ export interface DataTableConfig<TData> {
   enableFullscreen?: boolean;
   enableGrouping?: boolean;
   enablePinning?: boolean;
-  enableColumnDragDrop?: boolean; // drag and drop column reorder
-  enableCellCopy?: boolean; // global enable copy any cell
+  enableColumnDragDrop?: boolean;
+  enableCellCopy?: boolean;
   // Config
   pagination?: DataTablePaginationConfig;
   actions?: DataTableAction<TData>[];
   bulkActions?: DataTableBulkAction<TData>[];
   serverSide?: DataTableServerSideConfig;
+  globalFilters?: DataTableGlobalFilterConfig[]; // advanced global filter panel
   // Callbacks
   onRefresh?: () => void;
   onRowClick?: (row: TData) => void;
@@ -107,8 +118,8 @@ export interface DataTableConfig<TData> {
   emptyIcon?: ReactNode;
   emptyDescription?: string;
   loading?: boolean;
-  loadingStyle?: "skeleton" | "spinner" | "overlay"; // loading display type
-  loadingRows?: number; // number of skeleton rows (default 5)
+  loadingStyle?: "skeleton" | "spinner" | "overlay";
+  loadingRows?: number;
   className?: string;
   headerClassName?: string;
   rowClassName?: string | ((row: TData, index: number) => string);
