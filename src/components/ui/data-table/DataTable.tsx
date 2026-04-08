@@ -180,6 +180,7 @@ export function DataTable<TData extends Record<string, any>>({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [columnSizing, setColumnSizing] = useState({});
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [globalFilterValues, setGlobalFilterValues] = useState<Record<string, any>>(() => {
     const defaults: Record<string, any> = {};
     globalFilters?.forEach((f) => { if (f.defaultValue !== undefined) defaults[f.id] = f.defaultValue; });
