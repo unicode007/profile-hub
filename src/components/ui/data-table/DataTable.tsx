@@ -55,6 +55,7 @@ import { cn } from "@/lib/utils";
 import { DataTableConfig, DataTableAction, DataTableColumnMeta } from "./types";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { DataTablePagination } from "./DataTablePagination";
+import { GlobalFilterPanel } from "./GlobalFilterPanel";
 import { toast } from "sonner";
 
 // Cell with truncation and tooltip
