@@ -484,9 +484,10 @@ export function DataTable<TData extends Record<string, any>>({
       {/* Table - fixed header, scrollable body only */}
       <div
         className={cn(
-          "rounded-lg border relative",
+          "rounded-lg border relative overflow-auto",
           bordered && "border-2",
         )}
+        style={{ maxHeight: maxHeight || "70vh" }}
       >
         {/* Overlay spinner loading */}
         {loading && loadingStyle === "overlay" && (
