@@ -465,18 +465,28 @@ export function DataTable<TData extends Record<string, any>>({
         setDensity={setDensity}
       />
 
+      {/* Global Filter Panel */}
+      {globalFilters && globalFilters.length > 0 && (
+        <GlobalFilterPanel
+          table={table}
+          filters={globalFilters}
+          filterValues={globalFilterValues}
+          onFilterChange={handleGlobalFilterChange}
+          onReset={handleResetGlobalFilters}
+        />
+      )}
+
       {/* Top pagination */}
       {enablePagination && (pagination?.position === "top" || pagination?.position === "both") && (
         <DataTablePagination table={table} config={pagination} serverSide={serverSide} />
       )}
 
-      {/* Table */}
+      {/* Table - fixed header, scrollable body only */}
       <div
         className={cn(
-          "rounded-lg border overflow-auto relative",
+          "rounded-lg border relative",
           bordered && "border-2",
         )}
-        style={maxHeight ? { maxHeight, overflowY: "auto" } : { maxHeight: "70vh", overflowY: "auto" }}
       >
         {/* Overlay spinner loading */}
         {loading && loadingStyle === "overlay" && (
