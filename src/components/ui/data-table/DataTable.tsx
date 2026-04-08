@@ -505,8 +505,9 @@ export function DataTable<TData extends Record<string, any>>({
             <span className="text-sm text-muted-foreground">Loading data...</span>
           </div>
         ) : (
-          <Table>
-            <TableHeader className={cn(stickyHeader && "sticky top-0 z-20 bg-muted/95 backdrop-blur-sm", headerClassName)}>
+          <div className="overflow-x-auto">
+          <Table className="table-fixed w-full">
+            <TableHeader className={cn("sticky top-0 z-20 bg-muted/95 backdrop-blur-sm", headerClassName)}>
               {table.getHeaderGroups().map((hg) => (
                 <TableRow key={hg.id} className="hover:bg-transparent">
                   {hg.headers.map((header, colIndex) => {
