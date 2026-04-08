@@ -180,8 +180,35 @@ export function DataTable<TData extends Record<string, any>>({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [columnSizing, setColumnSizing] = useState({});
   const [columnOrder, setColumnOrder] = useState<ColumnOrderState>([]);
-  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [globalFilterValues, setGlobalFilterValues] = useState<Record<string, any>>(() => {
+    const defaults: Record<string, any> = {};
+    globalFilters?.forEach((f) => { if (f.defaultValue !== undefined) defaults[f.id] = f.defaultValue; });
+    return defaults;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Handle global filter panel changes - apply to column filters
+  const handleGlobalFilterChange = useCallback((id: string, value: any) => {
+    setGlobalFilterValues((prev) => ({ ...prev, [id]: value }));
+    const filterConfig = globalFilters?.find((f) => f.id === id);
+    if (filterConfig?.columnId) {
+      setColumnFilters((prev) => {
+        const filtered = prev.filter((f) => f.id !== filterConfig.columnId);
+        if (value !== undefined && value !== "" && !(Array.isArray(value) && value.length === 0)) {
+          filtered.push({ id: filterConfig.columnId!, value });
+        }
+        return filtered;
+      });
+    }
+  }, [globalFilters]);
+
+  const handleResetGlobalFilters = useCallback(() => {
+    setGlobalFilterValues({});
+    if (globalFilters) {
+      const columnIds = globalFilters.filter((f) => f.columnId).map((f) => f.columnId!);
+      setColumnFilters((prev) => prev.filter((f) => !columnIds.includes(f.id)));
+    }
+  }, [globalFilters]);
 
   // Drag and drop handlers
   const handleDragStart = useCallback((e: React.DragEvent, columnId: string) => {
