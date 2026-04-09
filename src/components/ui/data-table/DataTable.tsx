@@ -107,6 +107,25 @@ function TruncatedCell({ value, maxLength = 40, copyable, enableGlobalCopy }: { 
   );
 }
 
+// Drag handle for column reorder
+function DragHandle({ onDragStart, onDragOver, onDrop, columnId }: { 
+  onDragStart: (e: React.DragEvent, id: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent, id: string) => void;
+  columnId: string;
+}) {
+  return (
+    <span
+      draggable
+      onDragStart={(e) => onDragStart(e, columnId)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e, columnId)}
+      className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity mr-1"
+    >
+      <GripVertical className="h-3 w-3" />
+    </span>
+  );
+}
 
 export function DataTable<TData extends Record<string, any>>({
   columns: userColumns,
@@ -168,17 +187,6 @@ export function DataTable<TData extends Record<string, any>>({
     return defaults;
   });
   const containerRef = useRef<HTMLDivElement>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // Wrap onRefresh to show skeleton
-  const handleRefresh = useCallback(async () => {
-    if (!onRefresh) return;
-    setRefreshing(true);
-    try {
-      await onRefresh();
-    } catch {}
-    setTimeout(() => setRefreshing(false), 800);
-  }, [onRefresh]);
 
   // Handle global filter panel changes - apply to column filters
   const handleGlobalFilterChange = useCallback((id: string, value: any) => {
@@ -447,7 +455,7 @@ export function DataTable<TData extends Record<string, any>>({
         config={{
           columns: userColumns, data, enableGlobalFilter, enableFiltering, enableColumnVisibility,
           enableExport, enableRefresh, enableDensityToggle, enableFullscreen, bulkActions,
-          onRefresh: handleRefresh, title, serverSide,
+          onRefresh, title, serverSide,
         }}
         globalFilter={globalFilter}
         setGlobalFilter={setGlobalFilter}
@@ -476,12 +484,13 @@ export function DataTable<TData extends Record<string, any>>({
       {/* Table - fixed header, scrollable body only */}
       <div
         className={cn(
-          "rounded-lg border relative",
+          "rounded-lg border relative overflow-auto",
           bordered && "border-2",
         )}
+        style={{ maxHeight: maxHeight || "70vh" }}
       >
         {/* Overlay spinner loading */}
-        {(loading || refreshing) && loadingStyle === "overlay" && (
+        {loading && loadingStyle === "overlay" && (
           <div className="absolute inset-0 bg-background/60 backdrop-blur-[1px] z-30 flex items-center justify-center">
             <div className="flex flex-col items-center gap-2">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -491,180 +500,174 @@ export function DataTable<TData extends Record<string, any>>({
         )}
 
         {/* Spinner loading (replaces table) */}
-        {(loading || refreshing) && loadingStyle === "spinner" ? (
+        {loading && loadingStyle === "spinner" ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
             <span className="text-sm text-muted-foreground">Loading data...</span>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            {/* Fixed header */}
-            <Table className="table-fixed w-full">
-              <TableHeader className={cn("bg-muted/95 backdrop-blur-sm", headerClassName)}>
-                {table.getHeaderGroups().map((hg) => (
-                  <TableRow key={hg.id} className="hover:bg-transparent">
-                    {hg.headers.map((header, colIndex) => {
-                      const meta = header.column.columnDef.meta as DataTableColumnMeta | undefined;
-                      const stickyStyles = getStickyStyles(meta, colIndex, true);
-                      const isSticky = !!meta?.sticky;
-                      return (
-                        <TableHead
-                          key={header.id}
-                          draggable={enableColumnDragDrop && header.id !== "select" && header.id !== "actions"}
-                          onDragStart={(e) => enableColumnDragDrop && handleDragStart(e, header.id)}
-                          onDragOver={(e) => enableColumnDragDrop && handleDragOver(e)}
-                          onDrop={(e) => enableColumnDragDrop && handleDrop(e, header.id)}
-                          className={cn(
-                            densityPadding,
-                            "text-xs font-semibold select-none whitespace-nowrap relative group",
-                            header.column.getCanSort() && "cursor-pointer",
-                            meta?.align === "center" && "text-center",
-                            meta?.align === "right" && "text-right",
-                            meta?.headerClassName,
-                            isSticky && "bg-muted/95 backdrop-blur-sm",
-                            draggedColumn === header.id && "opacity-50 bg-primary/5",
-                            enableColumnDragDrop && header.id !== "select" && header.id !== "actions" && "cursor-grab active:cursor-grabbing",
-                          )}
-                          style={{
-                            width: header.getSize(),
-                            minWidth: meta?.minWidth,
-                            maxWidth: meta?.maxWidth,
-                            ...stickyStyles,
-                          }}
-                          onClick={header.column.getToggleSortingHandler()}
-                          colSpan={header.colSpan}
-                        >
-                          <div className={cn(
-                            "flex items-center",
-                            meta?.align === "center" && "justify-center",
-                            meta?.align === "right" && "justify-end",
-                          )}>
-                            {enableColumnDragDrop && header.id !== "select" && header.id !== "actions" && (
-                              <GripVertical className="h-3 w-3 opacity-0 group-hover:opacity-40 hover:!opacity-80 transition-opacity mr-1 flex-shrink-0" />
-                            )}
-                            {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                            <SortIcon header={header} />
-                          </div>
-                          {/* Resize handle */}
-                          {enableColumnResizing && header.column.getCanResize() && (
-                            <div
-                              onMouseDown={header.getResizeHandler()}
-                              onTouchStart={header.getResizeHandler()}
-                              className={cn(
-                                "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 bg-primary/30 hover:bg-primary/60 transition-opacity",
-                                header.column.getIsResizing() && "opacity-100 bg-primary"
-                              )}
+          <Table className="table-fixed w-full">
+            <TableHeader className={cn("sticky top-0 z-20 bg-muted/95 backdrop-blur-sm", headerClassName)}>
+              {table.getHeaderGroups().map((hg) => (
+                <TableRow key={hg.id} className="hover:bg-transparent">
+                  {hg.headers.map((header, colIndex) => {
+                    const meta = header.column.columnDef.meta as DataTableColumnMeta | undefined;
+                    const stickyStyles = getStickyStyles(meta, colIndex, true);
+                    const isSticky = !!meta?.sticky;
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          densityPadding,
+                          "text-xs font-semibold select-none whitespace-nowrap relative group",
+                          header.column.getCanSort() && "cursor-pointer",
+                          meta?.align === "center" && "text-center",
+                          meta?.align === "right" && "text-right",
+                          meta?.headerClassName,
+                          isSticky && "bg-muted/95 backdrop-blur-sm",
+                          draggedColumn === header.id && "opacity-50",
+                        )}
+                        style={{
+                          width: header.getSize(),
+                          minWidth: meta?.minWidth,
+                          maxWidth: meta?.maxWidth,
+                          ...stickyStyles,
+                        }}
+                        onClick={header.column.getToggleSortingHandler()}
+                        colSpan={header.colSpan}
+                      >
+                        <div className={cn(
+                          "flex items-center",
+                          meta?.align === "center" && "justify-center",
+                          meta?.align === "right" && "justify-end",
+                        )}>
+                          {enableColumnDragDrop && header.id !== "select" && header.id !== "actions" && (
+                            <DragHandle
+                              columnId={header.id}
+                              onDragStart={handleDragStart}
+                              onDragOver={handleDragOver}
+                              onDrop={handleDrop}
                             />
                           )}
-                        </TableHead>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableHeader>
-            </Table>
-            {/* Scrollable body */}
-            <div
-              className="overflow-y-auto"
-              style={{ maxHeight: maxHeight || "70vh" }}
-            >
-              <Table className="table-fixed w-full">
-                <TableBody>
-                  {(loading || refreshing) && loadingStyle === "skeleton" ? (
-                    Array.from({ length: loadingRows }).map((_, i) => (
-                      <TableRow key={`skeleton-${i}`}>
-                        {table.getVisibleFlatColumns().map((col, j) => (
-                          <TableCell key={j} className={densityPadding} style={{ width: col.getSize() }}>
-                            <Skeleton className={cn("h-4 rounded", j === 0 ? "w-10" : j === 1 ? "w-3/4" : "w-full")} />
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    ))
-                  ) : table.getRowModel().rows?.length ? (
-                    table.getRowModel().rows.map((row, idx) => {
-                      const disabled = isRowDisabled?.(row.original);
-                      const customRowClass = typeof rowClassName === "function" ? rowClassName(row.original, idx) : rowClassName;
-                      return (
-                        <TableRow
-                          key={row.id}
-                          data-state={row.getIsSelected() && "selected"}
-                          className={cn(
-                            onRowClick && !disabled && "cursor-pointer",
-                            disabled && "opacity-50 pointer-events-none",
-                            striped && idx % 2 === 1 && "bg-muted/20",
-                            customRowClass
-                          )}
-                          onClick={() => !disabled && onRowClick?.(row.original)}
-                        >
-                          {row.getVisibleCells().map((cell, colIndex) => {
-                            const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
-                            const stickyStyles = getStickyStyles(meta, colIndex, false);
-                            const isSticky = !!meta?.sticky;
-                            const truncateLength = meta?.truncateLength || 40;
-                            const isCopyable = meta?.copyable || enableCellCopy;
-                            const cellValue = cell.getValue();
-                            const hasCustomCell = cell.column.columnDef.cell && typeof cell.column.columnDef.cell !== "string";
-                            const isSpecialColumn = cell.column.id === "select" || cell.column.id === "actions";
-
-                            return (
-                              <TableCell
-                                key={cell.id}
-                                className={cn(
-                                  densityPadding,
-                                  "text-xs",
-                                  meta?.align === "center" && "text-center",
-                                  meta?.align === "right" && "text-right",
-                                  meta?.cellClassName,
-                                  meta?.nowrap && "whitespace-nowrap",
-                                  isSticky && "bg-background",
-                                )}
-                                style={{
-                                  width: cell.column.getSize(),
-                                  maxWidth: meta?.maxWidth || cell.column.getSize(),
-                                  ...stickyStyles,
-                                }}
-                              >
-                                {isSpecialColumn ? (
-                                  flexRender(cell.column.columnDef.cell, cell.getContext())
-                                ) : hasCustomCell ? (
-                                  <div className="min-w-0 truncate">
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                  </div>
-                                ) : (
-                                  <TruncatedCell
-                                    value={cellValue}
-                                    maxLength={truncateLength}
-                                    copyable={isCopyable}
-                                    enableGlobalCopy={enableCellCopy}
-                                  />
-                                )}
-                              </TableCell>
-                            );
-                          })}
-                        </TableRow>
-                      );
-                    })
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={table.getVisibleFlatColumns().length} className="h-40 text-center">
-                        <div className="flex flex-col items-center gap-3 text-muted-foreground py-8">
-                          {emptyIcon || <Inbox className="h-12 w-12 opacity-40" />}
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium">{emptyMessage}</p>
-                            {emptyDescription && <p className="text-xs">{emptyDescription}</p>}
-                          </div>
-                          {globalFilter && (
-                            <Button variant="outline" size="sm" className="text-xs" onClick={() => setGlobalFilter("")}>
-                              Clear search
-                            </Button>
-                          )}
+                          {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                          <SortIcon header={header} />
                         </div>
+                        {/* Resize handle */}
+                        {enableColumnResizing && header.column.getCanResize() && (
+                          <div
+                            onMouseDown={header.getResizeHandler()}
+                            onTouchStart={header.getResizeHandler()}
+                            className={cn(
+                              "absolute right-0 top-0 h-full w-1 cursor-col-resize select-none touch-none opacity-0 group-hover:opacity-100 bg-primary/30 hover:bg-primary/60 transition-opacity",
+                              header.column.getIsResizing() && "opacity-100 bg-primary"
+                            )}
+                          />
+                        )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {loading && loadingStyle === "skeleton" ? (
+                Array.from({ length: loadingRows }).map((_, i) => (
+                  <TableRow key={`skeleton-${i}`}>
+                    {table.getVisibleFlatColumns().map((col, j) => (
+                      <TableCell key={j} className={densityPadding}>
+                        <Skeleton className={cn("h-4", j === 0 ? "w-10" : j === 1 ? "w-32" : "w-full")} />
                       </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row, idx) => {
+                  const disabled = isRowDisabled?.(row.original);
+                  const customRowClass = typeof rowClassName === "function" ? rowClassName(row.original, idx) : rowClassName;
+                  return (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                      className={cn(
+                        onRowClick && !disabled && "cursor-pointer",
+                        disabled && "opacity-50 pointer-events-none",
+                        striped && idx % 2 === 1 && "bg-muted/20",
+                        customRowClass
+                      )}
+                      onClick={() => !disabled && onRowClick?.(row.original)}
+                    >
+                      {row.getVisibleCells().map((cell, colIndex) => {
+                        const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
+                        const stickyStyles = getStickyStyles(meta, colIndex, false);
+                        const isSticky = !!meta?.sticky;
+                        const shouldTruncate = meta?.truncate !== false; // default true
+                        const truncateLength = meta?.truncateLength || 40;
+                        const isCopyable = meta?.copyable || enableCellCopy;
+                        const cellValue = cell.getValue();
+
+                        // For custom cell renderers, render as-is
+                        const hasCustomCell = cell.column.columnDef.cell && typeof cell.column.columnDef.cell !== "string";
+                        const isSpecialColumn = cell.column.id === "select" || cell.column.id === "actions";
+
+                        return (
+                          <TableCell
+                            key={cell.id}
+                            className={cn(
+                              densityPadding,
+                              "text-xs",
+                              meta?.align === "center" && "text-center",
+                              meta?.align === "right" && "text-right",
+                              meta?.cellClassName,
+                              meta?.nowrap && "whitespace-nowrap",
+                              isSticky && "bg-background",
+                            )}
+                            style={{
+                              width: cell.column.getSize(),
+                              maxWidth: meta?.maxWidth || cell.column.getSize(),
+                              ...stickyStyles,
+                            }}
+                          >
+                            {isSpecialColumn ? (
+                              flexRender(cell.column.columnDef.cell, cell.getContext())
+                            ) : hasCustomCell ? (
+                              <div className="min-w-0 truncate">
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </div>
+                            ) : (
+                              <TruncatedCell
+                                value={cellValue}
+                                maxLength={truncateLength}
+                                copyable={isCopyable}
+                                enableGlobalCopy={enableCellCopy}
+                              />
+                            )}
+                          </TableCell>
+                        );
+                      })}
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+                  );
+                })
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={table.getVisibleFlatColumns().length} className="h-40 text-center">
+                    <div className="flex flex-col items-center gap-3 text-muted-foreground py-8">
+                      {emptyIcon || <Inbox className="h-12 w-12 opacity-40" />}
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{emptyMessage}</p>
+                        {emptyDescription && <p className="text-xs">{emptyDescription}</p>}
+                      </div>
+                      {globalFilter && (
+                        <Button variant="outline" size="sm" className="text-xs" onClick={() => setGlobalFilter("")}>
+                          Clear search
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
           </div>
         )}
       </div>
