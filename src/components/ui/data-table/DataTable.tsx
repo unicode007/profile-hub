@@ -400,8 +400,6 @@ export function DataTable<TData extends Record<string, any>>({
     },
   });
 
-  // Use renamed variable but keep `table` for all references below
-  const table = tableInstance;
 
   const densityPadding = density === "compact" ? "px-2 py-1" : density === "comfortable" ? "px-4 py-3" : "px-3 py-2";
 
