@@ -107,25 +107,6 @@ function TruncatedCell({ value, maxLength = 40, copyable, enableGlobalCopy }: { 
   );
 }
 
-// Drag handle for column reorder
-function DragHandle({ onDragStart, onDragOver, onDrop, columnId }: { 
-  onDragStart: (e: React.DragEvent, id: string) => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent, id: string) => void;
-  columnId: string;
-}) {
-  return (
-    <span
-      draggable
-      onDragStart={(e) => onDragStart(e, columnId)}
-      onDragOver={onDragOver}
-      onDrop={(e) => onDrop(e, columnId)}
-      className="cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity mr-1"
-    >
-      <GripVertical className="h-3 w-3" />
-    </span>
-  );
-}
 
 export function DataTable<TData extends Record<string, any>>({
   columns: userColumns,
