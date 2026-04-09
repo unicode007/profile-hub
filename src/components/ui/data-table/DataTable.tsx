@@ -342,7 +342,7 @@ export function DataTable<TData extends Record<string, any>>({
     setDragOverColumn(null);
   }, [draggedColumn, finalColumns]);
 
-  const tableInstance = useReactTable({
+  const table = useReactTable({
     data,
     columns: finalColumns,
     state: {
