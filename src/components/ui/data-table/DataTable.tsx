@@ -187,6 +187,17 @@ export function DataTable<TData extends Record<string, any>>({
     return defaults;
   });
   const containerRef = useRef<HTMLDivElement>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  // Wrap onRefresh to show skeleton
+  const handleRefresh = useCallback(async () => {
+    if (!onRefresh) return;
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } catch {}
+    setTimeout(() => setRefreshing(false), 800);
+  }, [onRefresh]);
 
   // Handle global filter panel changes - apply to column filters
   const handleGlobalFilterChange = useCallback((id: string, value: any) => {
