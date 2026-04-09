@@ -339,15 +339,8 @@ export function DataTable<TData extends Record<string, any>>({
       return currentOrder;
     });
     setDraggedColumn(null);
-      setDragOverColumn(null);
-      return;
-    }
-    currentOrder.splice(fromIndex, 1);
-    currentOrder.splice(toIndex, 0, sourceId);
-    setColumnOrder(currentOrder);
-    setDraggedColumn(null);
     setDragOverColumn(null);
-  }, [draggedColumn, columnOrder, table]);
+  }, [draggedColumn, finalColumns]);
 
   const tableInstance = useReactTable({
     data,
