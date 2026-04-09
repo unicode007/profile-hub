@@ -466,7 +466,7 @@ export function DataTable<TData extends Record<string, any>>({
         config={{
           columns: userColumns, data, enableGlobalFilter, enableFiltering, enableColumnVisibility,
           enableExport, enableRefresh, enableDensityToggle, enableFullscreen, bulkActions,
-          onRefresh, title, serverSide,
+          onRefresh: handleRefresh, title, serverSide,
         }}
         globalFilter={globalFilter}
         setGlobalFilter={setGlobalFilter}
