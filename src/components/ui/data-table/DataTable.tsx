@@ -328,12 +328,17 @@ export function DataTable<TData extends Record<string, any>>({
       return;
     }
 
-    const allColumnIds = table.getAllLeafColumns().map(c => c.id);
-    const currentOrder = columnOrder.length > 0 ? [...columnOrder] : [...allColumnIds];
-    const fromIndex = currentOrder.indexOf(sourceId);
-    const toIndex = currentOrder.indexOf(targetId);
-    if (fromIndex === -1 || toIndex === -1) {
-      setDraggedColumn(null);
+    setColumnOrder((prev) => {
+      const allIds = finalColumns.map(c => c.id!).filter(Boolean);
+      const currentOrder = prev.length > 0 ? [...prev] : [...allIds];
+      const fromIndex = currentOrder.indexOf(sourceId);
+      const toIndex = currentOrder.indexOf(targetId);
+      if (fromIndex === -1 || toIndex === -1) return prev;
+      currentOrder.splice(fromIndex, 1);
+      currentOrder.splice(toIndex, 0, sourceId);
+      return currentOrder;
+    });
+    setDraggedColumn(null);
       setDragOverColumn(null);
       return;
     }
