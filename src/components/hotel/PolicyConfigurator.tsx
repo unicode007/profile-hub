@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { X, Plus, Trash2, Loader2, Settings2 } from "lucide-react";
+import { X, Plus, Trash2, Loader2, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 interface PolicyField {
   name: string;
@@ -34,6 +36,7 @@ interface ActivePolicy {
   timeValue: string;
   percentageValue: string;
   rules: RuleRow[];
+  isOpen: boolean;
 }
 
 const POLICY_LIST = [
@@ -53,11 +56,11 @@ const MOCK_API_RESPONSES: Record<string, PolicyField> = {
 };
 
 const OPERATORS = [
-  { value: "<=", label: "<= (Less than or equal)" },
-  { value: ">=", label: ">= (Greater than or equal)" },
-  { value: "==", label: "== (Equal)" },
-  { value: "<", label: "< (Less than)" },
-  { value: ">", label: "> (Greater than)" },
+  { value: "<=", label: "≤" },
+  { value: ">=", label: "≥" },
+  { value: "==", label: "=" },
+  { value: "<", label: "<" },
+  { value: ">", label: ">" },
 ];
 
 const defaultRules = (): RuleRow[] => [
@@ -73,37 +76,29 @@ export const PolicyConfigurator: React.FC = () => {
   const handlePolicySelect = async (policyId: string) => {
     if (activePolicies.some((p) => p.policyId === policyId)) return;
     setLoadingId(policyId);
-    await new Promise((r) => setTimeout(r, 600));
+    await new Promise((r) => setTimeout(r, 500));
     const field = MOCK_API_RESPONSES[policyId];
     if (field) {
       setActivePolicies((prev) => [
         ...prev,
         {
-          policyId,
-          field,
-          booleanValue: false,
-          chargeValue: "",
-          chargeType: "fixed",
-          timeValue: "",
-          percentageValue: "",
+          policyId, field, booleanValue: false, chargeValue: "", chargeType: "fixed",
+          timeValue: "", percentageValue: "",
           rules: field.inputType === "rule" ? defaultRules() : [],
+          isOpen: true,
         },
       ]);
     }
     setLoadingId(null);
   };
 
-  const removePolicy = (policyId: string) => {
+  const removePolicy = (policyId: string) =>
     setActivePolicies((prev) => prev.filter((p) => p.policyId !== policyId));
-  };
 
-  const updatePolicy = (policyId: string, updates: Partial<ActivePolicy>) => {
-    setActivePolicies((prev) =>
-      prev.map((p) => (p.policyId === policyId ? { ...p, ...updates } : p))
-    );
-  };
+  const updatePolicy = (policyId: string, updates: Partial<ActivePolicy>) =>
+    setActivePolicies((prev) => prev.map((p) => (p.policyId === policyId ? { ...p, ...updates } : p)));
 
-  const updateRule = (policyId: string, ruleId: string, field: keyof RuleRow, value: string | number) => {
+  const updateRule = (policyId: string, ruleId: string, field: keyof RuleRow, value: string | number) =>
     setActivePolicies((prev) =>
       prev.map((p) =>
         p.policyId === policyId
@@ -111,31 +106,20 @@ export const PolicyConfigurator: React.FC = () => {
           : p
       )
     );
-  };
 
-  const addRule = (policyId: string) => {
+  const addRule = (policyId: string) =>
     setActivePolicies((prev) =>
       prev.map((p) =>
         p.policyId === policyId
-          ? {
-              ...p,
-              rules: [
-                ...p.rules,
-                { id: crypto.randomUUID(), operator: "<=", condition_value: "", charge_type: "percentage", charge_value: 0 },
-              ],
-            }
+          ? { ...p, rules: [...p.rules, { id: crypto.randomUUID(), operator: "<=", condition_value: "", charge_type: "percentage", charge_value: 0 }] }
           : p
       )
     );
-  };
 
-  const removeRule = (policyId: string, ruleId: string) => {
+  const removeRule = (policyId: string, ruleId: string) =>
     setActivePolicies((prev) =>
-      prev.map((p) =>
-        p.policyId === policyId ? { ...p, rules: p.rules.filter((r) => r.id !== ruleId) } : p
-      )
+      prev.map((p) => (p.policyId === policyId ? { ...p, rules: p.rules.filter((r) => r.id !== ruleId) } : p))
     );
-  };
 
   const handleSaveAll = () => {
     const payload = activePolicies.map((p) => {
@@ -150,219 +134,199 @@ export const PolicyConfigurator: React.FC = () => {
       return base;
     });
     console.log("Save payload:", payload);
-    alert("Saved! Check console for payload.");
+    alert("Saved! Check console.");
   };
 
-  const availablePolicies = POLICY_LIST.filter(
-    (p) => !activePolicies.some((ap) => ap.policyId === p.id)
-  );
+  const availablePolicies = POLICY_LIST.filter((p) => !activePolicies.some((ap) => ap.policyId === p.id));
 
-  const renderPolicyCard = (policy: ActivePolicy) => {
+  const renderInlineField = (policy: ActivePolicy) => {
     const { field, policyId } = policy;
 
-    return (
-      <Card key={policyId} className="relative group">
-        <CardHeader className="pb-3 flex flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-2 flex-wrap min-w-0">
-            <CardTitle className="text-sm font-semibold truncate">{field.name}</CardTitle>
-            <Badge variant="secondary" className="text-[10px] shrink-0">
-              {field.category} · {field.inputType}
-            </Badge>
+    if (field.inputType === "boolean") {
+      return (
+        <div className="flex items-center gap-2">
+          <Checkbox id={field.code} checked={policy.booleanValue}
+            onCheckedChange={(v) => updatePolicy(policyId, { booleanValue: !!v })} />
+          <Label htmlFor={field.code} className="text-xs cursor-pointer">{field.name}</Label>
+        </div>
+      );
+    }
+
+    if (field.inputType === "number") {
+      return (
+        <div className="grid grid-cols-2 gap-2">
+          <Input type="number" placeholder="Value" className="h-8 text-xs"
+            value={policy.chargeValue} onChange={(e) => updatePolicy(policyId, { chargeValue: e.target.value })} />
+          <Select value={policy.chargeType} onValueChange={(v) => updatePolicy(policyId, { chargeType: v })}>
+            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="fixed">Fixed</SelectItem>
+              <SelectItem value="percentage">Percentage</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      );
+    }
+
+    if (field.inputType === "time") {
+      return <Input type="time" className="h-8 text-xs max-w-[140px]" value={policy.timeValue}
+        onChange={(e) => updatePolicy(policyId, { timeValue: e.target.value })} />;
+    }
+
+    if (field.inputType === "percentage") {
+      return (
+        <div className="relative max-w-[140px]">
+          <Input type="number" placeholder="%" className="h-8 text-xs pr-7" value={policy.percentageValue}
+            onChange={(e) => updatePolicy(policyId, { percentageValue: e.target.value })} />
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground text-[10px]">%</span>
+        </div>
+      );
+    }
+
+    if (field.inputType === "rule") {
+      return (
+        <div className="space-y-2 w-full">
+          <div className="flex justify-end">
+            <Button variant="outline" size="sm" onClick={() => addRule(policyId)} className="h-7 gap-1 text-[10px] px-2">
+              <Plus className="h-3 w-3" /> Rule
+            </Button>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
-            onClick={() => removePolicy(policyId)}
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </CardHeader>
-        <CardContent className="pt-0">
-          {field.inputType === "boolean" && (
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-border bg-muted/30">
-              <Checkbox
-                id={field.code}
-                checked={policy.booleanValue}
-                onCheckedChange={(v) => updatePolicy(policyId, { booleanValue: !!v })}
-              />
-              <Label htmlFor={field.code} className="text-sm cursor-pointer">
-                {field.name}
-              </Label>
-            </div>
-          )}
-
-          {field.inputType === "number" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Charge Value</Label>
-                <Input
-                  type="number"
-                  placeholder="Enter amount"
-                  value={policy.chargeValue}
-                  onChange={(e) => updatePolicy(policyId, { chargeValue: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Charge Type</Label>
-                <Select value={policy.chargeType} onValueChange={(v) => updatePolicy(policyId, { chargeType: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="fixed">Fixed</SelectItem>
-                    <SelectItem value="percentage">Percentage</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-
-          {field.inputType === "time" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">{field.name}</Label>
-              <Input
-                type="time"
-                value={policy.timeValue}
-                onChange={(e) => updatePolicy(policyId, { timeValue: e.target.value })}
-                className="max-w-[200px]"
-              />
-            </div>
-          )}
-
-          {field.inputType === "percentage" && (
-            <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">{field.name}</Label>
-              <div className="relative max-w-[200px]">
-                <Input
-                  type="number"
-                  placeholder="Enter %"
-                  value={policy.percentageValue}
-                  onChange={(e) => updatePolicy(policyId, { percentageValue: e.target.value })}
-                  className="pr-8"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
-              </div>
-            </div>
-          )}
-
-          {field.inputType === "rule" && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-end">
-                <Button variant="outline" size="sm" onClick={() => addRule(policyId)} className="gap-1 text-xs">
-                  <Plus className="h-3 w-3" /> Add Rule
-                </Button>
-              </div>
-              <div className="rounded-md border border-border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/50">
-                      <TableHead className="min-w-[130px]">Operator</TableHead>
-                      <TableHead className="min-w-[120px]">Hours Before</TableHead>
-                      <TableHead className="min-w-[130px]">Charge Type</TableHead>
-                      <TableHead className="min-w-[110px]">Value</TableHead>
-                      <TableHead className="w-[50px]" />
+          <div className="rounded border border-border overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/40">
+                  <TableHead className="text-[10px] py-1.5 px-2 min-w-[80px]">Op</TableHead>
+                  <TableHead className="text-[10px] py-1.5 px-2 min-w-[70px]">Hrs</TableHead>
+                  <TableHead className="text-[10px] py-1.5 px-2 min-w-[90px]">Type</TableHead>
+                  <TableHead className="text-[10px] py-1.5 px-2 min-w-[70px]">Val</TableHead>
+                  <TableHead className="w-8 py-1.5 px-1" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {policy.rules.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-3 text-[10px]">
+                      No rules yet
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  policy.rules.map((rule) => (
+                    <TableRow key={rule.id}>
+                      <TableCell className="p-1">
+                        <Select value={rule.operator} onValueChange={(v) => updateRule(policyId, rule.id, "operator", v)}>
+                          <SelectTrigger className="h-7 text-[11px] px-2"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {OPERATORS.map((op) => (
+                              <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input type="number" className="h-7 text-[11px] px-2" value={rule.condition_value}
+                          onChange={(e) => updateRule(policyId, rule.id, "condition_value", e.target.value)} />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Select value={rule.charge_type} onValueChange={(v) => updateRule(policyId, rule.id, "charge_type", v)}>
+                          <SelectTrigger className="h-7 text-[11px] px-2"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fixed">Fixed</SelectItem>
+                            <SelectItem value="percentage">%</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Input type="number" className="h-7 text-[11px] px-2" value={rule.charge_value}
+                          onChange={(e) => updateRule(policyId, rule.id, "charge_value", Number(e.target.value))} />
+                      </TableCell>
+                      <TableCell className="p-1">
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive"
+                          onClick={() => removeRule(policyId, rule.id)}>
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {policy.rules.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={5} className="text-center text-muted-foreground py-6 text-sm">
-                          No rules. Click "+ Add Rule" to begin.
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      policy.rules.map((rule) => (
-                        <TableRow key={rule.id}>
-                          <TableCell className="p-1.5">
-                            <Select value={rule.operator} onValueChange={(v) => updateRule(policyId, rule.id, "operator", v)}>
-                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                {OPERATORS.map((op) => (
-                                  <SelectItem key={op.value} value={op.value}>{op.label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="p-1.5">
-                            <Input type="number" className="h-9 text-xs" value={rule.condition_value}
-                              onChange={(e) => updateRule(policyId, rule.id, "condition_value", e.target.value)} placeholder="Hours" />
-                          </TableCell>
-                          <TableCell className="p-1.5">
-                            <Select value={rule.charge_type} onValueChange={(v) => updateRule(policyId, rule.id, "charge_type", v)}>
-                              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="fixed">Fixed</SelectItem>
-                                <SelectItem value="percentage">Percentage (%)</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="p-1.5">
-                            <Input type="number" className="h-9 text-xs" value={rule.charge_value}
-                              onChange={(e) => updateRule(policyId, rule.id, "charge_value", Number(e.target.value))} placeholder="Value" />
-                          </TableCell>
-                          <TableCell className="p-1.5">
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeRule(policyId, rule.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-5">
-      <Card>
-        <CardHeader className="pb-4">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Settings2 className="h-5 w-5 text-primary" />
-            Policy Configurator
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Add Policy</Label>
-            <Select
-              value=""
-              onValueChange={handlePolicySelect}
-              disabled={availablePolicies.length === 0 || !!loadingId}
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader className="pb-3 px-4 pt-4">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <Settings2 className="h-4 w-4 text-primary" />
+          Policy Configurator
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 space-y-3">
+        {/* Selector */}
+        <div className="flex items-center gap-2">
+          <Select value="" onValueChange={handlePolicySelect} disabled={availablePolicies.length === 0 || !!loadingId}>
+            <SelectTrigger className="h-9 text-xs flex-1">
+              <SelectValue placeholder={availablePolicies.length === 0 ? "All policies added" : "Add a policy..."} />
+            </SelectTrigger>
+            <SelectContent>
+              {availablePolicies.map((p) => (
+                <SelectItem key={p.id} value={p.id} className="text-xs">{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {loadingId && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground shrink-0" />}
+        </div>
+
+        {/* Active policies */}
+        {activePolicies.length > 0 && <Separator />}
+
+        <div className="space-y-2">
+          {activePolicies.map((policy) => (
+            <Collapsible
+              key={policy.policyId}
+              open={policy.isOpen}
+              onOpenChange={(open) => updatePolicy(policy.policyId, { isOpen: open })}
             >
-              <SelectTrigger>
-                <SelectValue placeholder={availablePolicies.length === 0 ? "All policies added" : "Choose a policy to add..."} />
-              </SelectTrigger>
-              <SelectContent>
-                {availablePolicies.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="rounded-lg border border-border bg-muted/20 overflow-hidden">
+                {/* Header row */}
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0">
+                      {policy.isOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                    </Button>
+                  </CollapsibleTrigger>
+                  <span className="text-xs font-medium truncate flex-1">{policy.field.name}</span>
+                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 shrink-0">
+                    {policy.field.inputType}
+                  </Badge>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => removePolicy(policy.policyId)}>
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
 
-          {loadingId && (
-            <div className="flex items-center gap-2 py-4 justify-center text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" /> Loading policy...
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                {/* Collapsible body */}
+                <CollapsibleContent>
+                  <div className="px-3 pb-3 pt-1">
+                    {renderInlineField(policy)}
+                  </div>
+                </CollapsibleContent>
+              </div>
+            </Collapsible>
+          ))}
+        </div>
 
-      {/* Active policy cards */}
-      <div className="grid grid-cols-1 gap-4">
-        {activePolicies.map(renderPolicyCard)}
-      </div>
-
-      {activePolicies.length > 0 && (
-        <Button onClick={handleSaveAll} className="w-full sm:w-auto">
-          Save All Policies
-        </Button>
-      )}
-    </div>
+        {activePolicies.length > 0 && (
+          <Button onClick={handleSaveAll} size="sm" className="w-full text-xs h-8">
+            Save All Policies
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 };
