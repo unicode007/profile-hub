@@ -380,6 +380,170 @@ export type Database = {
           },
         ]
       }
+      hotel_menus: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          parent_id: string | null
+          required_feature: string | null
+          route: string | null
+          sort_order: number
+          tenant_id: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          parent_id?: string | null
+          required_feature?: string | null
+          route?: string | null
+          sort_order?: number
+          tenant_id: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          parent_id?: string | null
+          required_feature?: string | null
+          route?: string | null
+          sort_order?: number
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_menus_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_menus"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_menus_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_public_listings: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          hotel_id: string
+          id: string
+          is_public: boolean
+          published_at: string | null
+          seo_description: string | null
+          seo_keywords: string[] | null
+          seo_title: string | null
+          short_summary: string | null
+          slug: string | null
+          updated_at: string
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          hotel_id: string
+          id?: string
+          is_public?: boolean
+          published_at?: string | null
+          seo_description?: string | null
+          seo_keywords?: string[] | null
+          seo_title?: string | null
+          short_summary?: string | null
+          slug?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          hotel_id?: string
+          id?: string
+          is_public?: boolean
+          published_at?: string | null
+          seo_description?: string | null
+          seo_keywords?: string[] | null
+          seo_title?: string | null
+          short_summary?: string | null
+          slug?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_public_listings_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: true
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      hotel_role_permissions: {
+        Row: {
+          can_create: boolean
+          can_delete: boolean
+          can_report: boolean
+          can_update: boolean
+          can_view: boolean
+          created_at: string
+          hotel_id: string
+          id: string
+          menu_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_report?: boolean
+          can_update?: boolean
+          can_view?: boolean
+          created_at?: string
+          hotel_id: string
+          id?: string
+          menu_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          can_create?: boolean
+          can_delete?: boolean
+          can_report?: boolean
+          can_update?: boolean
+          can_view?: boolean
+          created_at?: string
+          hotel_id?: string
+          id?: string
+          menu_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hotel_role_permissions_hotel_id_fkey"
+            columns: ["hotel_id"]
+            isOneToOne: false
+            referencedRelation: "hotels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hotel_role_permissions_menu_id_fkey"
+            columns: ["menu_id"]
+            isOneToOne: false
+            referencedRelation: "hotel_menus"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hotels: {
         Row: {
           address: string | null
@@ -399,6 +563,7 @@ export type Database = {
           phone: string | null
           star_rating: number | null
           state: string | null
+          tenant_id: string
           updated_at: string
           website: string | null
         }
@@ -420,6 +585,7 @@ export type Database = {
           phone?: string | null
           star_rating?: number | null
           state?: string | null
+          tenant_id: string
           updated_at?: string
           website?: string | null
         }
@@ -441,10 +607,19 @@ export type Database = {
           phone?: string | null
           star_rating?: number | null
           state?: string | null
+          tenant_id?: string
           updated_at?: string
           website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "hotels_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       housekeeping_tasks: {
         Row: {
@@ -1991,6 +2166,63 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          max_hotels: number
+          max_rooms_per_hotel: number
+          max_users_per_tenant: number
+          name: string
+          price_monthly: number
+          price_yearly: number
+          sort_order: number
+          trial_days: number
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          max_hotels?: number
+          max_rooms_per_hotel?: number
+          max_users_per_tenant?: number
+          name: string
+          price_monthly?: number
+          price_yearly?: number
+          sort_order?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          currency?: string
+          description?: string | null
+          features?: Json
+          id?: string
+          is_active?: boolean
+          max_hotels?: number
+          max_rooms_per_hotel?: number
+          max_users_per_tenant?: number
+          name?: string
+          price_monthly?: number
+          price_yearly?: number
+          sort_order?: number
+          trial_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
@@ -2121,6 +2353,99 @@ export type Database = {
           },
         ]
       }
+      tenant_subscriptions: {
+        Row: {
+          billing_cycle: string
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string
+          id: string
+          plan_id: string
+          status: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string
+          id?: string
+          plan_id: string
+          status?: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          billing_cycle?: string
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string
+          id?: string
+          plan_id?: string
+          status?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tenant_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tenant_subscriptions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tenants: {
+        Row: {
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string | null
+          slug: string
+          status: string
+          trial_ends_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id?: string | null
+          slug: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string | null
+          slug?: string
+          status?: string
+          trial_ends_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -2150,17 +2475,49 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_tenant_active_plan: {
+        Args: { _tenant_id: string }
+        Returns: {
+          code: string
+          created_at: string
+          currency: string
+          description: string | null
+          features: Json
+          id: string
+          is_active: boolean
+          max_hotels: number
+          max_rooms_per_hotel: number
+          max_users_per_tenant: number
+          name: string
+          price_monthly: number
+          price_yearly: number
+          sort_order: number
+          trial_days: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "subscription_plans"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       get_user_hotel_ids: { Args: { _user_id: string }; Returns: string[] }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
       }
+      get_user_tenant_ids: { Args: { _user_id: string }; Returns: string[] }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      tenant_has_feature: {
+        Args: { _feature: string; _tenant_id: string }
         Returns: boolean
       }
     }
@@ -2177,6 +2534,8 @@ export type Database = {
         | "guest_comm"
         | "lost_found"
         | "staff"
+        | "platform_admin"
+        | "tenant_owner"
       booking_status:
         | "pending"
         | "confirmed"
@@ -2335,6 +2694,8 @@ export const Constants = {
         "guest_comm",
         "lost_found",
         "staff",
+        "platform_admin",
+        "tenant_owner",
       ],
       booking_status: [
         "pending",
