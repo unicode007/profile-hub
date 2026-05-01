@@ -2177,6 +2177,8 @@ export type Database = {
         | "guest_comm"
         | "lost_found"
         | "staff"
+        | "platform_admin"
+        | "tenant_owner"
       booking_status:
         | "pending"
         | "confirmed"
@@ -2335,6 +2337,8 @@ export const Constants = {
         "guest_comm",
         "lost_found",
         "staff",
+        "platform_admin",
+        "tenant_owner",
       ],
       booking_status: [
         "pending",
