@@ -2516,6 +2516,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      setup_tenant_with_first_hotel: {
+        Args: {
+          _billing_cycle: string
+          _contact_email: string
+          _hotel_address: string
+          _hotel_city: string
+          _hotel_name: string
+          _hotel_phone: string
+          _plan_id: string
+          _tenant_name: string
+          _tenant_slug: string
+        }
+        Returns: Json
+      }
       tenant_has_feature: {
         Args: { _feature: string; _tenant_id: string }
         Returns: boolean

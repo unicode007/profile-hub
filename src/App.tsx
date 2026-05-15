@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import DataTableDemo from "./pages/DataTableDemo";
 import PolicyDemo from "./pages/PolicyDemo";
 import DynamicPricingDemo from "./pages/DynamicPricingDemo";
+import TenantSignup from "./pages/TenantSignup";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/data-table-demo" element={<DataTableDemo />} />
           <Route path="/policy-demo" element={<PolicyDemo />} />
           <Route path="/dynamic-pricing" element={<DynamicPricingDemo />} />
+          <Route path="/signup" element={<TenantSignup />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
