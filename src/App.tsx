@@ -8,6 +8,8 @@ import DataTableDemo from "./pages/DataTableDemo";
 import PolicyDemo from "./pages/PolicyDemo";
 import DynamicPricingDemo from "./pages/DynamicPricingDemo";
 import TenantSignup from "./pages/TenantSignup";
+import AppLayout from "./components/layout/AppLayout";
+import Showcase from "./pages/app/Showcase";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +26,10 @@ const App = () => (
           <Route path="/policy-demo" element={<PolicyDemo />} />
           <Route path="/dynamic-pricing" element={<DynamicPricingDemo />} />
           <Route path="/signup" element={<TenantSignup />} />
+          <Route path="/app" element={<AppLayout />}>
+            <Route index element={<Showcase />} />
+            <Route path=":module" element={<Showcase />} />
+          </Route>
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
