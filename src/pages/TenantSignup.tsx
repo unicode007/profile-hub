@@ -115,11 +115,11 @@ export default function TenantSignup() {
       });
       if (error) throw error;
       if (!data.session) {
-        toast({
-          title: "Check your inbox",
-          description: "Confirm your email, then return to continue setup.",
+        const { error: signInErr } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
         });
-        return;
+        if (signInErr) throw signInErr;
       }
       setAccountReady(true);
       setStep(1);
