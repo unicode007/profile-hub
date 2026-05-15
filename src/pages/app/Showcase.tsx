@@ -157,7 +157,7 @@ export default function Showcase() {
     case "restaurant":
       return (
         <PageShell title="Restaurant POS">
-          <RestaurantPOS bookings={demoBookings} onOrdersUpdate={setOrders} />
+          <RestaurantPOS bookings={demoBookings} onAddChargeToFolio={noop} onOrdersUpdate={setOrders} />
         </PageShell>
       );
     case "kds":
