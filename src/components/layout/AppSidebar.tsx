@@ -8,6 +8,10 @@ import {
   Sparkles, Wrench, Wine, Shirt, Utensils, ChefHat, MessageSquare, MoonStar,
   Search, BarChart3, ShoppingCart, Layers, AlertTriangle, Users, Star,
   FileText, Settings2, Package, ClipboardList, CalendarRange,
+  Crown, CreditCard, ShieldCheck, Route as RouteIcon, ListChecks, Gauge,
+  Receipt, BookOpen, Tag, UserCog, KeyRound, History, Globe, Megaphone,
+  PieChart, Boxes, FileSpreadsheet, Mail, Truck, Building, BadgePercent,
+  CircleDollarSign, FileCheck2, BellRing, Plug, Languages,
 } from "lucide-react";
 
 type Item = { title: string; url: string; icon: any };
@@ -20,6 +24,22 @@ const groups: Group[] = [
       { title: "Discover Hotels", url: "/", icon: Home },
       { title: "Front Desk", url: "/app/dashboard", icon: LayoutDashboard },
       { title: "Revenue Analytics", url: "/app/analytics", icon: BarChart3 },
+      { title: "Admin Dashboard", url: "/app/admin-dashboard", icon: Gauge },
+    ],
+  },
+  {
+    label: "Master Platform",
+    items: [
+      { title: "Master Dashboard", url: "/app/master", icon: Crown },
+      { title: "Subscription Plans", url: "/app/plans", icon: BadgePercent },
+      { title: "Tenant Subscriptions", url: "/app/subscriptions", icon: CreditCard },
+      { title: "Tenants / Admins", url: "/app/tenants", icon: Building },
+      { title: "Hotel Approvals", url: "/app/hotel-approvals", icon: FileCheck2 },
+      { title: "Feature Flags", url: "/app/features", icon: ShieldCheck },
+      { title: "Routes & Menus", url: "/app/routes-menus", icon: RouteIcon },
+      { title: "Global Amenities", url: "/app/global-amenities", icon: Sparkles },
+      { title: "Global Policies", url: "/app/global-policies", icon: BookOpen },
+      { title: "Platform Revenue", url: "/app/platform-revenue", icon: CircleDollarSign },
     ],
   },
   {
@@ -31,6 +51,7 @@ const groups: Group[] = [
       { title: "Date Availability", url: "/app/availability", icon: Search },
       { title: "Booking Kanban", url: "/app/kanban", icon: KanbanSquare },
       { title: "Overbooking", url: "/app/overbooking", icon: AlertTriangle },
+      { title: "Cancellations & No-show", url: "/app/cancellations", icon: AlertTriangle },
     ],
   },
   {
@@ -39,8 +60,10 @@ const groups: Group[] = [
       { title: "Room Types", url: "/app/room-types", icon: Layers },
       { title: "Physical Rooms", url: "/app/physical-rooms", icon: BedDouble },
       { title: "Inventory Master", url: "/app/inventory-master", icon: ClipboardList },
+      { title: "Rate Plans", url: "/app/rate-plans", icon: Tag },
       { title: "Dynamic Pricing", url: "/dynamic-pricing", icon: Sparkles },
       { title: "Policies", url: "/policy-demo", icon: Settings2 },
+      { title: "Channel Manager", url: "/app/channel-manager", icon: Plug },
     ],
   },
   {
@@ -52,6 +75,8 @@ const groups: Group[] = [
       { title: "Laundry", url: "/app/laundry", icon: Shirt },
       { title: "Lost & Found", url: "/app/lost-found", icon: Package },
       { title: "Procurement", url: "/app/procurement", icon: ShoppingCart },
+      { title: "Suppliers", url: "/app/suppliers", icon: Truck },
+      { title: "Inventory Items", url: "/app/inventory-items", icon: Boxes },
     ],
   },
   {
@@ -59,21 +84,42 @@ const groups: Group[] = [
     items: [
       { title: "Restaurant POS", url: "/app/restaurant", icon: Utensils },
       { title: "Kitchen Display", url: "/app/kds", icon: ChefHat },
+      { title: "Menu Manager", url: "/app/menu-manager", icon: BookOpen },
+      { title: "Tables", url: "/app/tables", icon: Layers },
     ],
   },
   {
     label: "Guests & Staff",
     items: [
+      { title: "Guests CRM", url: "/app/guests", icon: Users },
       { title: "Guest Communication", url: "/app/guest-comms", icon: MessageSquare },
+      { title: "Notifications", url: "/app/notifications", icon: BellRing },
+      { title: "Campaigns", url: "/app/campaigns", icon: Megaphone },
       { title: "Reviews & Ratings", url: "/app/reviews", icon: Star },
       { title: "Staff", url: "/app/staff", icon: Users },
       { title: "Staff Login", url: "/app/staff-login", icon: Users },
+      { title: "Roles & Permissions", url: "/app/roles-permissions", icon: UserCog },
+      { title: "Access Logs", url: "/app/access-logs", icon: KeyRound },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { title: "Invoices", url: "/app/invoices", icon: Receipt },
+      { title: "Payments", url: "/app/payments", icon: CircleDollarSign },
+      { title: "Refunds", url: "/app/refunds", icon: CreditCard },
+      { title: "Folios", url: "/app/folios", icon: FileSpreadsheet },
+      { title: "Tax & GST", url: "/app/tax", icon: PieChart },
     ],
   },
   {
     label: "Reporting",
     items: [
       { title: "Night Audit", url: "/app/night-audit", icon: MoonStar },
+      { title: "Occupancy Report", url: "/app/report-occupancy", icon: PieChart },
+      { title: "Revenue Report", url: "/app/report-revenue", icon: BarChart3 },
+      { title: "Staff Productivity", url: "/app/report-staff", icon: ListChecks },
+      { title: "Audit Logs", url: "/app/audit-logs", icon: History },
       { title: "Data Table Demo", url: "/data-table-demo", icon: FileText },
     ],
   },
@@ -81,6 +127,13 @@ const groups: Group[] = [
     label: "Setup",
     items: [
       { title: "Hotel Onboarding", url: "/app/onboarding", icon: Building2 },
+      { title: "Hotel Profile", url: "/app/hotel-profile", icon: Building2 },
+      { title: "Hotel Policies", url: "/app/hotel-policies", icon: BookOpen },
+      { title: "Amenities", url: "/app/amenities", icon: Sparkles },
+      { title: "Public Listing & SEO", url: "/app/public-listing", icon: Globe },
+      { title: "Email Templates", url: "/app/email-templates", icon: Mail },
+      { title: "Localization", url: "/app/localization", icon: Languages },
+      { title: "Integrations", url: "/app/integrations", icon: Plug },
       { title: "Tenant Signup", url: "/signup", icon: Users },
     ],
   },
