@@ -242,6 +242,69 @@ export default function Showcase() {
     case "master":
       return <ModulePlaceholder scope="master" title="Master Dashboard" description="Platform-wide KPIs and SaaS controls."
         bullets={["Total admins & tenants", "Active vs expired subscriptions", "MRR & plan-wise revenue", "Hotel approval queue", "Feature usage analytics", "Platform growth trends"]} />;
+
+    // ---------- Front Desk Operations ----------
+    case "fd-dashboard":
+      return <ModulePlaceholder scope="staff" title="Front Desk Dashboard" description="Operational hub for today's reception activity."
+        bullets={["Today's arrivals & departures", "In-house guests count", "Available / occupied / dirty rooms", "Pending payments & hold bookings", "No-show candidates", "Guest requests & maintenance alerts"]} />;
+    case "arrivals":
+      return <ModulePlaceholder scope="staff" title="Arrivals Today" description="Confirmed bookings expected to check in today."
+        bullets={["Booking & guest details", "ETA & special requests", "Pre-assigned room", "Pending advance", "One-click check-in", "Print registration card"]} />;
+    case "departures":
+      return <ModulePlaceholder scope="staff" title="Departures Today" description="In-house guests scheduled to check out today."
+        bullets={["Folio summary", "Outstanding balance", "Late checkout flag", "One-click checkout", "Print invoice", "Trigger housekeeping"]} />;
+    case "in-house":
+      return <ModulePlaceholder scope="staff" title="In-House Guests" description="All currently staying guests across rooms."
+        bullets={["Room → guest mapping", "Folio quick view", "Add charge / request", "Extend stay / change room", "Raise maintenance", "Print interim bill"]} />;
+    case "walk-in":
+      return <ModulePlaceholder scope="staff" title="Walk-in Booking" description="Create booking + check-in in a single flow."
+        bullets={["Live room-type availability", "Rate plan picker", "ID proof capture", "Advance collection", "Auto room allocation", "Registration card print"]} />;
+    case "room-rack":
+      return <ModulePlaceholder scope="staff" title="Room Rack" description="Real-time grid of every physical room and its status."
+        bullets={["Floor-wise layout", "Status colors (avail/occ/dirty/OOO)", "Drag-and-drop allocation", "Hover guest details", "Quick actions per room", "Filter by room type"]} />;
+    case "room-allocation":
+      return <ModulePlaceholder scope="staff" title="Room Allocation" description="Assign physical rooms to confirmed bookings."
+        bullets={["Filter by booked room type", "Hide dirty/OOO/blocked rooms", "Upgrade with rate diff", "Manager approval flow", "Bulk allocation", "Audit trail"]} />;
+    case "check-in":
+      return <ModulePlaceholder scope="staff" title="Check-in" description="Convert a confirmed booking into an active stay."
+        bullets={["Search by booking/guest/mobile/OTA", "KYC capture", "Advance / deposit collection", "Physical room assignment", "Status → Checked-in / Occupied", "Reg card print"]} />;
+    case "early-checkin":
+      return <ModulePlaceholder scope="staff" title="Early Check-in" description="Handle guests arriving before standard check-in time."
+        bullets={["Policy lookup", "Auto fee calculation", "Manager approval if waived", "Add fee to folio", "Proceed to check-in", "Audit log"]} />;
+    case "check-out":
+      return <ModulePlaceholder scope="staff" title="Checkout" description="Final billing, payment, invoice and housekeeping trigger."
+        bullets={["Folio recalculation", "Tax & discount apply", "Deposit adjustment", "Collect due payment", "Generate invoice", "Room → Dirty + HK task"]} />;
+    case "late-checkout":
+      return <ModulePlaceholder scope="staff" title="Late Checkout" description="Apply late-checkout charges per hotel policy."
+        bullets={["Hourly / half-day / full-day", "Auto fee calculation", "Add to folio", "Manager waive option", "Notify housekeeping", "Audit log"]} />;
+    case "room-change":
+      return <ModulePlaceholder scope="staff" title="Room Change" description="Move an in-house guest to another room."
+        bullets={["Reason selector", "Available rooms list", "Rate difference calc", "Approval for free upgrade", "Old room → Dirty/Maintenance", "Update folio & key card"]} />;
+    case "extend-stay":
+      return <ModulePlaceholder scope="staff" title="Extend Stay" description="Extend an in-house booking by additional nights."
+        bullets={["Date picker", "Inventory check", "Rate recalculation", "Collect extra payment", "Suggest room change if blocked", "Update checkout date"]} />;
+    case "guest-requests":
+      return <ModulePlaceholder scope="staff" title="Guest Requests" description="Track service requests from in-house guests."
+        bullets={["Towel / water / cleaning / taxi", "Assign to dept", "Priority & SLA", "Status pipeline", "Guest notification", "Resolution audit"]} />;
+    case "complaints":
+      return <ModulePlaceholder scope="staff" title="Complaints" description="Log and resolve guest complaints with escalation."
+        bullets={["Category & severity", "Auto-route to dept", "Escalation rules", "Manager visibility", "Resolution notes", "Guest follow-up"]} />;
+    case "wakeup-calls":
+      return <ModulePlaceholder scope="staff" title="Wake-up Calls" description="Schedule and track guest wake-up calls."
+        bullets={["Schedule by room", "Recurring / one-time", "Auto reminder to operator", "Status: pending/done/missed", "Snooze & retry", "Daily report"]} />;
+    case "cashier":
+      return <ModulePlaceholder scope="staff" title="Cashier / Collection" description="Daily payment collection and drawer reconciliation."
+        bullets={["Mode-wise totals (cash/UPI/card)", "Pending payments list", "Collect & receipt print", "Refund requests", "Shift cash close", "Variance report"]} />;
+    case "print-center":
+      return <ModulePlaceholder scope="staff" title="Print Center" description="Reprint invoices, folios, receipts and reg cards."
+        bullets={["Search by booking", "Invoice / receipt / folio", "Registration card", "GRC & ID copy", "Email PDF", "Reprint audit"]} />;
+    case "switchboard":
+      return <ModulePlaceholder scope="staff" title="Reception Switchboard" description="Inbound call routing and guest line directory."
+        bullets={["Room → extension map", "Incoming call log", "DND status", "Message to room", "Voicemail", "Call summary"]} />;
+    case "concierge":
+      return <ModulePlaceholder scope="staff" title="Concierge Desk" description="Coordinate guest services, transport and local bookings."
+        bullets={["Taxi & airport pickup", "Tour & restaurant booking", "Lost & found handoff", "Luggage tickets", "VIP arrival prep", "Service log"]} />;
+
     case "plans":
       return <ModulePlaceholder scope="master" title="Subscription Plans" description="Create & manage SaaS plans, pricing, and feature limits."
         bullets={["Plan tiers (Starter/Pro/Enterprise)", "Hotel / staff / room limits", "Feature flags per plan", "Monthly & yearly pricing", "Trial period config", "Activate / deactivate plans"]} />;
