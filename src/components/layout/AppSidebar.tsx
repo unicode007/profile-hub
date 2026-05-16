@@ -12,6 +12,9 @@ import {
   Receipt, BookOpen, Tag, UserCog, KeyRound, History, Globe, Megaphone,
   PieChart, Boxes, FileSpreadsheet, Mail, Truck, Building, BadgePercent,
   CircleDollarSign, FileCheck2, BellRing, Plug, Languages,
+  LogIn, LogOut, DoorOpen, DoorClosed, UserPlus, ConciergeBell, Bell,
+  Hotel as HotelIcon, ArrowLeftRight, Clock, Banknote, Printer,
+  PhoneCall, Headphones, ShieldAlert, Repeat, Timer,
 } from "lucide-react";
 
 type Item = { title: string; url: string; icon: any };
@@ -40,6 +43,31 @@ const groups: Group[] = [
       { title: "Global Amenities", url: "/app/global-amenities", icon: Sparkles },
       { title: "Global Policies", url: "/app/global-policies", icon: BookOpen },
       { title: "Platform Revenue", url: "/app/platform-revenue", icon: CircleDollarSign },
+    ],
+  },
+  {
+    label: "Front Desk Operations",
+    items: [
+      { title: "FD Dashboard", url: "/app/fd-dashboard", icon: LayoutDashboard },
+      { title: "Arrivals Today", url: "/app/arrivals", icon: LogIn },
+      { title: "Departures Today", url: "/app/departures", icon: LogOut },
+      { title: "In-House Guests", url: "/app/in-house", icon: Users },
+      { title: "Walk-in Booking", url: "/app/walk-in", icon: UserPlus },
+      { title: "Room Rack", url: "/app/room-rack", icon: HotelIcon },
+      { title: "Room Allocation", url: "/app/room-allocation", icon: DoorOpen },
+      { title: "Check-in", url: "/app/check-in", icon: DoorOpen },
+      { title: "Early Check-in", url: "/app/early-checkin", icon: Timer },
+      { title: "Checkout", url: "/app/check-out", icon: DoorClosed },
+      { title: "Late Checkout", url: "/app/late-checkout", icon: Clock },
+      { title: "Room Change", url: "/app/room-change", icon: ArrowLeftRight },
+      { title: "Extend Stay", url: "/app/extend-stay", icon: Repeat },
+      { title: "Guest Requests", url: "/app/guest-requests", icon: ConciergeBell },
+      { title: "Complaints", url: "/app/complaints", icon: ShieldAlert },
+      { title: "Wake-up Calls", url: "/app/wakeup-calls", icon: Bell },
+      { title: "Cashier / Collection", url: "/app/cashier", icon: Banknote },
+      { title: "Print Center", url: "/app/print-center", icon: Printer },
+      { title: "Reception Switchboard", url: "/app/switchboard", icon: PhoneCall },
+      { title: "Concierge Desk", url: "/app/concierge", icon: Headphones },
     ],
   },
   {
