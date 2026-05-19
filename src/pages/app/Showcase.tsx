@@ -32,6 +32,7 @@ import { HotelOnboarding } from "@/components/hotel/HotelOnboarding";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles } from "lucide-react";
 import * as M from "@/components/modules/Modules";
+import AccessControl from "@/components/acl/AccessControl";
 
 const noop = () => {};
 const noopBooking = (b: any) => console.log("view booking", b?.id);
@@ -242,6 +243,8 @@ export default function Showcase() {
     // ---------- Master / Platform ----------
     case "master":
       return <M.MasterDashboard />;
+    case "acl":
+      return <AccessControl />;
 
     // ---------- Front Desk Operations ----------
     case "plans": return <M.SubscriptionPlans />;

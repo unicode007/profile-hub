@@ -43,6 +43,7 @@ const groups: Group[] = [
       { title: "Global Amenities", url: "/app/global-amenities", icon: Sparkles },
       { title: "Global Policies", url: "/app/global-policies", icon: BookOpen },
       { title: "Platform Revenue", url: "/app/platform-revenue", icon: CircleDollarSign },
+      { title: "Access Control (ACL)", url: "/app/acl", icon: ShieldCheck },
     ],
   },
   {
