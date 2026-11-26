@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type PointerEvent as ReactPointerEvent } from "react";
 import { Booking } from "./types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -56,6 +56,7 @@ import {
   CalendarPlus,
   Edit,
   Eye,
+  GripVertical,
 } from "lucide-react";
 
 // Menu Categories
@@ -116,7 +117,25 @@ export interface RestaurantTable {
   currentOrderId?: string;
   section?: "indoor" | "outdoor" | "private" | "bar";
   shape?: "round" | "square" | "rectangle";
+  position?: { x: number; y: number };
 }
+
+type FloorTableStatus = "available" | "occupied" | "billed" | "reserved" | "cleaning";
+
+const floorStatusAppearance: Record<FloorTableStatus, { label: string; color: string }> = {
+  available: { label: "Available", color: "bg-primary" },
+  occupied: { label: "Occupied", color: "bg-destructive" },
+  billed: { label: "Billed", color: "bg-secondary-foreground" },
+  reserved: { label: "Reserved", color: "bg-accent-foreground" },
+  cleaning: { label: "Cleaning · available soon", color: "bg-muted-foreground" },
+};
+
+const restaurantTableSections = [
+  { value: "indoor", label: "Indoor" },
+  { value: "outdoor", label: "Outdoor" },
+  { value: "private", label: "Private dining" },
+  { value: "bar", label: "Bar area" },
+] as const;
 
 export interface TableReservation {
   id: string;
@@ -209,21 +228,21 @@ const demoMenuItems: MenuItem[] = [
 // Demo Tables with sections
 const generateDemoTables = (): RestaurantTable[] => {
   return [
-    { id: "table-1", number: 1, capacity: 2, status: "available", section: "indoor", shape: "round" },
-    { id: "table-2", number: 2, capacity: 2, status: "available", section: "indoor", shape: "round" },
-    { id: "table-3", number: 3, capacity: 4, status: "occupied", section: "indoor", shape: "square", currentOrderId: "order-demo-1" },
-    { id: "table-4", number: 4, capacity: 4, status: "available", section: "indoor", shape: "square" },
-    { id: "table-5", number: 5, capacity: 4, status: "available", section: "indoor", shape: "square" },
-    { id: "table-6", number: 6, capacity: 4, status: "reserved", section: "indoor", shape: "rectangle" },
-    { id: "table-7", number: 7, capacity: 6, status: "available", section: "outdoor", shape: "rectangle" },
-    { id: "table-8", number: 8, capacity: 6, status: "available", section: "outdoor", shape: "rectangle" },
-    { id: "table-9", number: 9, capacity: 4, status: "cleaning", section: "outdoor", shape: "square" },
-    { id: "table-10", number: 10, capacity: 8, status: "available", section: "private", shape: "rectangle" },
-    { id: "table-11", number: 11, capacity: 10, status: "reserved", section: "private", shape: "rectangle" },
-    { id: "table-12", number: 12, capacity: 2, status: "occupied", section: "bar", shape: "round", currentOrderId: "order-demo-2" },
-    { id: "table-13", number: 13, capacity: 2, status: "available", section: "bar", shape: "round" },
-    { id: "table-14", number: 14, capacity: 2, status: "available", section: "bar", shape: "round" },
-    { id: "table-15", number: 15, capacity: 4, status: "available", section: "bar", shape: "square" },
+    { id: "table-1", number: 1, capacity: 2, status: "available", section: "indoor", shape: "round", position: { x: 16, y: 25 } },
+    { id: "table-2", number: 2, capacity: 2, status: "available", section: "indoor", shape: "round", position: { x: 50, y: 25 } },
+    { id: "table-3", number: 3, capacity: 4, status: "occupied", section: "indoor", shape: "square", currentOrderId: "order-demo-1", position: { x: 84, y: 25 } },
+    { id: "table-4", number: 4, capacity: 4, status: "available", section: "indoor", shape: "square", position: { x: 28, y: 73 } },
+    { id: "table-5", number: 5, capacity: 4, status: "available", section: "indoor", shape: "square", position: { x: 61, y: 73 } },
+    { id: "table-6", number: 6, capacity: 4, status: "reserved", section: "indoor", shape: "rectangle", position: { x: 84, y: 73 } },
+    { id: "table-7", number: 7, capacity: 6, status: "available", section: "outdoor", shape: "rectangle", position: { x: 28, y: 40 } },
+    { id: "table-8", number: 8, capacity: 6, status: "available", section: "outdoor", shape: "rectangle", position: { x: 72, y: 40 } },
+    { id: "table-9", number: 9, capacity: 4, status: "cleaning", section: "outdoor", shape: "square", position: { x: 50, y: 80 } },
+    { id: "table-10", number: 10, capacity: 8, status: "available", section: "private", shape: "rectangle", position: { x: 30, y: 52 } },
+    { id: "table-11", number: 11, capacity: 10, status: "reserved", section: "private", shape: "rectangle", position: { x: 70, y: 52 } },
+    { id: "table-12", number: 12, capacity: 2, status: "occupied", section: "bar", shape: "round", currentOrderId: "order-demo-2", position: { x: 18, y: 28 } },
+    { id: "table-13", number: 13, capacity: 2, status: "available", section: "bar", shape: "round", position: { x: 50, y: 28 } },
+    { id: "table-14", number: 14, capacity: 2, status: "available", section: "bar", shape: "round", position: { x: 82, y: 28 } },
+    { id: "table-15", number: 15, capacity: 4, status: "available", section: "bar", shape: "square", position: { x: 50, y: 76 } },
   ];
 };
 
@@ -356,6 +375,14 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
   const [selectedCategory, setSelectedCategory] = useState<string>(categories[0].id);
   const [searchQuery, setSearchQuery] = useState("");
   const [tableSection, setTableSection] = useState<"all" | "indoor" | "outdoor" | "private" | "bar">("all");
+  const [draggingTableId, setDraggingTableId] = useState<string | null>(null);
+  const [addTableOpen, setAddTableOpen] = useState(false);
+  const [newTableDraft, setNewTableDraft] = useState({
+    number: "",
+    capacity: "2",
+    section: "indoor" as NonNullable<RestaurantTable["section"]>,
+    shape: "round" as NonNullable<RestaurantTable["shape"]>,
+  });
   
   const [paymentModal, setPaymentModal] = useState<{ open: boolean; order: RestaurantOrder | null }>({ open: false, order: null });
   const [guestLinkModal, setGuestLinkModal] = useState<{ open: boolean; table: RestaurantTable | null }>({ open: false, table: null });
@@ -631,6 +658,67 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
     toast.success("Table marked as available");
   };
 
+  const handleAddTable = () => {
+    const number = Number(newTableDraft.number);
+    const capacity = Number(newTableDraft.capacity);
+    if (!Number.isInteger(number) || number < 1 || !Number.isInteger(capacity) || capacity < 1) {
+      toast.error("Enter a valid table number and seating capacity");
+      return;
+    }
+    if (tables.some(table => table.number === number)) {
+      toast.error(`Table ${number} already exists`);
+      return;
+    }
+
+    const positions = [
+      { x: 14, y: 17 }, { x: 38, y: 17 }, { x: 62, y: 17 }, { x: 86, y: 17 },
+      { x: 14, y: 39 }, { x: 38, y: 39 }, { x: 62, y: 39 }, { x: 86, y: 39 },
+      { x: 14, y: 62 }, { x: 38, y: 62 }, { x: 62, y: 62 }, { x: 86, y: 62 },
+      { x: 14, y: 84 }, { x: 38, y: 84 }, { x: 62, y: 84 }, { x: 86, y: 84 },
+    ];
+    const sectionTableCount = tables.filter(table => table.section === newTableDraft.section).length;
+    const position = positions[sectionTableCount % positions.length];
+    const newTable: RestaurantTable = {
+      id: `table-${Date.now()}`,
+      number,
+      capacity,
+      status: "available",
+      section: newTableDraft.section,
+      shape: newTableDraft.shape,
+      position,
+    };
+
+    setTables(prev => [...prev, newTable]);
+    setTableSection(newTableDraft.section);
+    setNewTableDraft({ number: "", capacity: "2", section: "indoor", shape: "round" });
+    setAddTableOpen(false);
+    toast.success(`Table ${number} added to the floor plan`);
+  };
+
+  const handleTablePositionPointerDown = (event: ReactPointerEvent<HTMLButtonElement>, tableId: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setDraggingTableId(tableId);
+  };
+
+  const handleTablePositionPointerMove = (event: ReactPointerEvent<HTMLButtonElement>, tableId: string) => {
+    if (draggingTableId !== tableId) return;
+    const zone = event.currentTarget.closest<HTMLElement>("[data-floor-zone]");
+    if (!zone) return;
+    const bounds = zone.getBoundingClientRect();
+    const x = Math.min(88, Math.max(12, ((event.clientX - bounds.left) / bounds.width) * 100));
+    const y = Math.min(88, Math.max(12, ((event.clientY - bounds.top) / bounds.height) * 100));
+    setTables(prev => prev.map(table => table.id === tableId ? { ...table, position: { x, y } } : table));
+  };
+
+  const handleTablePositionPointerEnd = (event: ReactPointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    setDraggingTableId(null);
+  };
+
   const handleSeatReservation = (resId: string) => {
     const reservation = reservations.find(r => r.id === resId);
     if (!reservation) return;
@@ -669,10 +757,9 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
     return diff;
   };
 
-  // Filter tables by section
-  const filteredTables = tableSection === "all" 
-    ? tables 
-    : tables.filter(t => t.section === tableSection);
+  const visibleSections = tableSection === "all"
+    ? restaurantTableSections
+    : restaurantTableSections.filter(section => section.value === tableSection);
 
   // Today's reservations
   const todaysReservations = reservations.filter(r => 
@@ -735,137 +822,201 @@ export const RestaurantPOS = ({ bookings, onAddChargeToFolio, onOrdersUpdate }: 
 
         {/* Tables View */}
         <TabsContent value="tables" className="mt-6">
-          <Card>
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <CardTitle>Table Layout</CardTitle>
-                  <CardDescription>Select a table to start or view an order</CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Select value={tableSection} onValueChange={(v) => setTableSection(v as typeof tableSection)}>
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue placeholder="All Sections" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Sections</SelectItem>
-                      <SelectItem value="indoor">Indoor</SelectItem>
-                      <SelectItem value="outdoor">Outdoor</SelectItem>
-                      <SelectItem value="private">Private Dining</SelectItem>
-                      <SelectItem value="bar">Bar Area</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-lg font-semibold">Dining room</h3>
+                <p className="text-sm text-muted-foreground">{tables.length} tables · {tables.reduce((sum, table) => sum + table.capacity, 0)} seats</p>
               </div>
-            </CardHeader>
-            <CardContent>
-              {/* Legend */}
-              <div className="flex gap-4 mb-6 flex-wrap items-center justify-between">
-                <div className="flex gap-4 flex-wrap">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-green-500 bg-green-100 dark:bg-green-950" />
-                    <span className="text-sm">Available</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-red-500 bg-red-100 dark:bg-red-950" />
-                    <span className="text-sm">Occupied</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-amber-500 bg-amber-100 dark:bg-amber-950" />
-                    <span className="text-sm">Reserved</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 rounded-full border-2 border-muted-foreground bg-muted" />
-                    <span className="text-sm">Cleaning</span>
-                  </div>
-                </div>
-                {todaysReservations.length > 0 && (
-                  <Badge variant="outline" className="gap-1">
-                    <Bell className="h-3 w-3" />
-                    {todaysReservations.filter(r => r.status === "confirmed").length} upcoming reservations
-                  </Badge>
-                )}
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Select value={tableSection} onValueChange={(value) => setTableSection(value as typeof tableSection)}>
+                  <SelectTrigger className="w-full sm:w-[180px]">
+                    <SelectValue placeholder="All sections" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All sections</SelectItem>
+                    {restaurantTableSections.map(section => (
+                      <SelectItem key={section.value} value={section.value}>{section.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button onClick={() => setAddTableOpen(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add table
+                </Button>
               </div>
+            </div>
 
-              {/* Table Grid with Sections */}
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
-                {filteredTables.map(table => {
-                  const order = orders.find(o => o.id === table.currentOrderId);
-                  const reservation = todaysReservations.find(r => r.tableNumber === table.number && r.status === "confirmed");
-                  const elapsedMinutes = order ? getElapsedTime(order.createdAt) : 0;
-                  
-                  return (
-                    <div
-                      key={table.id}
-                      onClick={() => {
-                        if (table.status === "cleaning") {
-                          handleMarkTableReady(table.id);
-                          return;
-                        }
-                        handleTableSelect(table);
-                      }}
-                      className={`
-                        relative p-4 rounded-xl border-2 cursor-pointer transition-all group
-                        hover:shadow-lg hover:scale-105
-                        ${table.status === "available" ? "border-green-500 bg-green-50 dark:bg-green-950/30" : ""}
-                        ${table.status === "occupied" ? "border-red-500 bg-red-50 dark:bg-red-950/30" : ""}
-                        ${table.status === "reserved" ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30" : ""}
-                        ${table.status === "cleaning" ? "border-muted-foreground bg-muted/50" : ""}
-                        ${table.shape === "round" ? "rounded-full aspect-square" : ""}
-                      `}
-                    >
-                      {/* Section Badge */}
-                      {table.section && (
-                        <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {table.section}
-                          </Badge>
-                        </div>
-                      )}
-                      
-                      <div className="text-center">
-                        <div className="text-2xl font-bold">{table.number}</div>
-                        <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {table.capacity}
-                        </div>
-                        
-                        {order && (
-                          <div className="mt-2 space-y-1">
-                            <Badge variant="secondary" className="text-xs">
-                              ₹{order.total.toLocaleString()}
-                            </Badge>
-                            {elapsedMinutes > 0 && (
-                              <div className={`text-[10px] flex items-center justify-center gap-0.5 ${elapsedMinutes > 60 ? "text-destructive" : "text-muted-foreground"}`}>
-                                <Timer className="h-2.5 w-2.5" />
-                                {elapsedMinutes}m
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {reservation && !order && (
-                          <div className="mt-2">
-                            <Badge variant="outline" className="text-[10px] border-amber-500">
-                              {reservation.time}
-                            </Badge>
-                          </div>
-                        )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md border border-border bg-card px-3 py-2">
+              {(Object.keys(floorStatusAppearance) as FloorTableStatus[]).map(status => (
+                <div key={status} className="flex items-center gap-2 text-sm">
+                  <span className={`h-3 w-3 rounded-full ${floorStatusAppearance[status].color}`} />
+                  <span>{floorStatusAppearance[status].label}</span>
+                </div>
+              ))}
+              {todaysReservations.length > 0 && (
+                <Badge variant="outline" className="ml-auto gap-1">
+                  <Bell className="h-3 w-3" />
+                  {todaysReservations.filter(reservation => reservation.status === "confirmed").length} upcoming reservations
+                </Badge>
+              )}
+            </div>
 
-                        {table.status === "cleaning" && (
-                          <div className="mt-2">
-                            <Badge variant="outline" className="text-[10px] border-primary text-primary">
-                              Click to Ready
-                            </Badge>
-                          </div>
-                        )}
-                      </div>
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2" aria-label="Restaurant floor plan">
+              {visibleSections.map(section => {
+                const sectionTables = tables.filter(table => table.section === section.value);
+                return (
+                  <section
+                    key={section.value}
+                    data-floor-zone={section.value}
+                    className="relative min-h-[280px] overflow-hidden rounded-md border border-dashed border-border bg-muted/20"
+                    aria-label={`${section.label} floor area`}
+                  >
+                    <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
+                      <h4 className="font-medium">{section.label}</h4>
+                      <Badge variant="outline" className="text-xs">{sectionTables.length}</Badge>
                     </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+                    {sectionTables.map((table, index) => {
+                      const order = orders.find(item => item.id === table.currentOrderId);
+                      const reservation = todaysReservations.find(item => item.tableNumber === table.number && item.status === "confirmed");
+                      const status: FloorTableStatus = table.status === "occupied" && order?.status === "billed" ? "billed" : table.status;
+                      const statusStyle = {
+                        available: "border-primary bg-primary/10 text-primary",
+                        occupied: "border-destructive bg-destructive/10 text-destructive",
+                        billed: "border-secondary-foreground bg-secondary text-secondary-foreground",
+                        reserved: "border-accent-foreground bg-accent text-accent-foreground",
+                        cleaning: "border-muted-foreground bg-muted text-muted-foreground",
+                      }[status];
+                      const position = table.position ?? { x: 20 + (index % 4) * 20, y: 25 + Math.floor(index / 4) * 25 };
+                      const shape = table.shape === "round"
+                        ? "h-14 w-14 rounded-full sm:h-[72px] sm:w-[72px]"
+                        : table.shape === "rectangle"
+                          ? "h-12 w-20 rounded-md sm:h-14 sm:w-24"
+                          : "h-14 w-14 rounded-md sm:h-[72px] sm:w-[72px]";
+                      const elapsedMinutes = order ? getElapsedTime(order.createdAt) : 0;
+
+                      return (
+                        <div
+                          key={table.id}
+                          className={`group absolute -translate-x-1/2 -translate-y-1/2 ${draggingTableId === table.id ? "z-30" : "z-10"}`}
+                          style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                        >
+                          <div className="relative">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              aria-label={`Table ${table.number}, ${statusStyle ? floorStatusAppearance[status].label : ""}, seats ${table.capacity}`}
+                              title={table.status === "cleaning" ? "Mark table available" : `Open Table ${table.number}`}
+                              onClick={() => {
+                                if (table.status === "cleaning") {
+                                  handleMarkTableReady(table.id);
+                                  return;
+                                }
+                                handleTableSelect(table);
+                              }}
+                              className={`relative flex flex-col items-center justify-center gap-0.5 border-2 p-0 shadow-sm transition-colors hover:bg-background focus-visible:ring-2 focus-visible:ring-ring ${shape} ${statusStyle}`}
+                            >
+                              <span aria-hidden="true" className="absolute -top-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-border bg-background" />
+                              <span aria-hidden="true" className="absolute -bottom-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full border border-border bg-background" />
+                              <span aria-hidden="true" className="absolute left-0 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
+                              <span aria-hidden="true" className="absolute right-0 top-1/2 h-2.5 w-2.5 translate-x-1/2 -translate-y-1/2 rounded-full border border-border bg-background" />
+                              <span className="text-sm font-semibold leading-none">{table.number}</span>
+                              <span className="flex items-center gap-0.5 text-[10px] leading-none">
+                                <Users className="h-3 w-3" />{table.capacity}
+                              </span>
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="secondary"
+                              size="icon"
+                              aria-label={`Move table ${table.number}`}
+                              title={`Drag to move Table ${table.number}`}
+                              className="absolute -right-3 -top-3 z-20 h-7 w-7 cursor-grab touch-none rounded-full border border-border shadow-sm active:cursor-grabbing sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
+                              onPointerDown={(event) => handleTablePositionPointerDown(event, table.id)}
+                              onPointerMove={(event) => handleTablePositionPointerMove(event, table.id)}
+                              onPointerUp={handleTablePositionPointerEnd}
+                              onPointerCancel={handleTablePositionPointerEnd}
+                            >
+                              <GripVertical className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          {(order || reservation) && (
+                            <div className="mt-1 flex justify-center">
+                              <Badge variant="secondary" className="max-w-full gap-1 px-1.5 py-0 text-[10px]">
+                                {order ? <><span>₹{order.total.toLocaleString()}</span>{elapsedMinutes > 0 && <span>· {elapsedMinutes}m</span>}</> : reservation?.time}
+                              </Badge>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </section>
+                );
+              })}
+            </div>
+
+            <Dialog open={addTableOpen} onOpenChange={setAddTableOpen}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add dining table</DialogTitle>
+                  <DialogDescription>Set the table details and choose its floor area.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="restaurant-table-number">Table number</Label>
+                    <Input
+                      id="restaurant-table-number"
+                      type="number"
+                      min="1"
+                      value={newTableDraft.number}
+                      onChange={event => setNewTableDraft(prev => ({ ...prev, number: event.target.value }))}
+                      placeholder="e.g. 16"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="restaurant-table-capacity">Seats</Label>
+                    <Input
+                      id="restaurant-table-capacity"
+                      type="number"
+                      min="1"
+                      value={newTableDraft.capacity}
+                      onChange={event => setNewTableDraft(prev => ({ ...prev, capacity: event.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Floor area</Label>
+                    <Select
+                      value={newTableDraft.section}
+                      onValueChange={value => setNewTableDraft(prev => ({ ...prev, section: value as NonNullable<RestaurantTable["section"]> }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {restaurantTableSections.map(section => <SelectItem key={section.value} value={section.value}>{section.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Table shape</Label>
+                    <Select
+                      value={newTableDraft.shape}
+                      onValueChange={value => setNewTableDraft(prev => ({ ...prev, shape: value as NonNullable<RestaurantTable["shape"]> }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="round">Round</SelectItem>
+                        <SelectItem value="square">Square</SelectItem>
+                        <SelectItem value="rectangle">Rectangle</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAddTableOpen(false)}>Cancel</Button>
+                  <Button onClick={handleAddTable}>Add table</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </TabsContent>
 
         {/* POS View */}
